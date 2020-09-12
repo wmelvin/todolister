@@ -12,6 +12,8 @@
 from pathlib import Path
 from collections import namedtuple
 from datetime import datetime
+import re
+
 
 TodoFile = namedtuple('TodoFile', 'last_modified, full_name')
 
@@ -21,11 +23,15 @@ ScanProps = namedtuple('ScanProps', 'dir_name, do_recurse')
 #dirs_to_scan = [ScanProps('~/Desktop/wemDesk/txt', True)]
 dirs_to_scan = [ScanProps('./test', True)]
 
-file_specs = ['notes*.txt', 'todo*.txt']
+file_specs = ['^notes.*.txt', '.*notes.txt', '^todo.*.txt', '.*-todo.txt']
 
 
 def matches_filespec(file_name):
-    return True
+    for spec in file_specs:
+        if re.search(spec.lower(), file_name.lower()):
+            return True
+    return False
+
 
 def get_matching_files(dir_name, do_recurse):
     p = Path(dir_name).resolve()
