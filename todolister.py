@@ -5,7 +5,7 @@
 #
 # 
 #
-# 2020-09-11
+# 2020-09-12
 #----------------------------------------------------------------------
 
 
@@ -49,36 +49,23 @@ def get_matching_files(dir_name, do_recurse):
 
 file_list = []
 
-# for dir in dirs_to_scan:
-#     p = Path(dir.dir_name).resolve()
-#     for file_spec in file_specs:
-#         if dir.do_recurse:
-#             files = p.rglob(file_spec)
-#         else:
-#             files = p.glob(file_spec)
-#         for f in files:
-#             ts = datetime.fromtimestamp(f.stat().st_mtime)
-#             file_list.append(TodoFile(ts.strftime('%Y-%m-%dT%H:%M:%S'), str(f)))
-
-# for dir in dirs_to_scan:
-#     p = Path(dir.dir_name).resolve()
-#     for f in [x for x in p.iterdir() if x.is_file()]:
-#         if matches_filespec(f.name):
-#             ts = datetime.fromtimestamp(f.stat().st_mtime)
-#             file_list.append(TodoFile(ts.strftime('%Y-%m-%dT%H:%M:%S'), str(f)))
-
-
 for dir in dirs_to_scan:
     get_matching_files(dir.dir_name, dir.do_recurse)
-
-
-
 
 file_list.sort()
 file_list.reverse()
 
 for a in file_list:
     print(a)
+    
+print('READ CONTENTS')
+for a in file_list:
+    print("---[{0}]".format(a.full_name))
+    text_file = open(a.full_name, 'r')
+    lines = text_file.readlines()
+    for line in lines:
+        print(line)
+
 
 
 
