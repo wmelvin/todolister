@@ -46,30 +46,13 @@ def get_matching_files(dir_name, do_recurse):
             file_list.append(TodoFile(ts.strftime('%Y-%m-%dT%H:%M:%S'), str(f)))
 
 
-
-file_list = []
-
-for dir in dirs_to_scan:
-    get_matching_files(dir.dir_name, dir.do_recurse)
-
-file_list.sort()
-file_list.reverse()
-
-for a in file_list:
-    print(a)
-
-todo_items = []
-
-print('READ CONTENTS')
-for a in file_list:
-    print("---[{0}]".format(a.full_name))
-    #text_file = open(a.full_name, 'r'):
-    with open(a.full_name, 'r') as text_file:
+def get_todo_items(file_name):
+    todo_items = []
+    with open(file_name, 'r') as text_file:
         in_todo = False
         todo_text = ''
         lines = text_file.readlines()        
         for line in lines:
-            #print(line)
             stripped = line.strip()
             if in_todo:
                 if len(stripped) == 0:
@@ -90,8 +73,31 @@ for a in file_list:
             todo_items.append(todo_text)
             todo_text = ''
 
-        for item in todo_items:
-            print(item)
+    return todo_items
+
+#----------------------------------------------------------------------
+
+file_list = []
+
+for dir in dirs_to_scan:
+    get_matching_files(dir.dir_name, dir.do_recurse)
+
+file_list.sort()
+file_list.reverse()
+
+print('LIST OF FILES')
+
+for a in file_list:
+    print(a)
+
+print('READ CONTENTS')
+
+for a in file_list:
+    print("---[{0}]".format(a.full_name))    
+
+    todo_items = get_todo_items(a.full_name)
+    for item in todo_items:
+        print(item)
 
 
 
