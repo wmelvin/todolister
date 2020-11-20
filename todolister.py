@@ -5,7 +5,7 @@
 #
 # 
 #
-# 2020-09-12
+# 2020-11-20
 #----------------------------------------------------------------------
 
 
@@ -24,6 +24,8 @@ ScanProps = namedtuple('ScanProps', 'dir_name, do_recurse')
 dirs_to_scan = [ScanProps('./test', True)]
 
 file_specs = ['^notes.*.txt', '.*notes.txt', '^todo.*.txt', '.*-todo.txt']
+
+output_name = Path.cwd() / "todolist.html"
 
 
 def matches_filespec(file_name):
@@ -75,6 +77,27 @@ def get_todo_items(file_name):
 
     return todo_items
 
+
+# *!* NEXT: html_style
+def html5_head(title):
+    s = "<!DOCTYPE html>\n"
+    s += "<html lang=""en"">\n"
+    s += "<head>\n"
+    s += "    <meta charset=""UTF-8"">\n"
+    s += "    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">\n"
+    s += f"    <title>{title}</title>\n"
+    s += "</head>\n"
+    s += "<body>\n"
+    return s
+
+
+def html5_tail():
+    s = "</body>\n"
+    s += "</html>\n"
+    return s
+
+
+
 #----------------------------------------------------------------------
 
 file_list = []
@@ -100,25 +123,10 @@ for a in file_list:
         print(item)
 
 
-
-
-
-#----------------------------------------------------------------------
-# NEXT: 
-# For each file
-#   get content
-#   for each line
-#      if match to-do marker
-#         add connected lines to todo-items-list
-# Write todo-items-list to HTML file.  
-#   html_header
-#   html_style
-#   html_body
-#   html_footer
-#
-# Seems like this is simple enough that using html templates is not necessary.
-#
-#----------------------------------------------------------------------
+with open(output_name, 'w') as output_file:
+    output_file.write(html5_head('TEST'))
+    output_file.write("<h1>TEST</h1>\n")
+    output_file.write(html5_tail())
 
 
 print('Done.')
