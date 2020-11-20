@@ -57,14 +57,41 @@ file_list.reverse()
 
 for a in file_list:
     print(a)
-    
+
+todo_items = []
+
 print('READ CONTENTS')
 for a in file_list:
     print("---[{0}]".format(a.full_name))
-    text_file = open(a.full_name, 'r')
-    lines = text_file.readlines()
-    for line in lines:
-        print(line)
+    #text_file = open(a.full_name, 'r'):
+    with open(a.full_name, 'r') as text_file:
+        in_todo = False
+        todo_text = ''
+        lines = text_file.readlines()        
+        for line in lines:
+            #print(line)
+            stripped = line.strip()
+            if in_todo:
+                if len(stripped) == 0:
+                    in_todo = False
+                    if len(todo_text) > 0:
+                        todo_items.append(todo_text)
+                        todo_text = ''
+                else:
+                    todo_text += "{0}\n".format(line)
+            else: 
+                if stripped.startswith('[ ]'):
+                    in_todo = True
+                    todo_text += "{0}\n".format(line)
+
+        # Save last item, in case there were no blank lines at the 
+        # end of the file.
+        if len(todo_text) > 0:
+            todo_items.append(todo_text)
+            todo_text = ''
+
+        for item in todo_items:
+            print(item)
 
 
 
