@@ -15,9 +15,11 @@ from datetime import datetime
 import re
 
 
+ScanProps = namedtuple('ScanProps', 'dir_name, do_recurse')
+
 TodoFile = namedtuple('TodoFile', 'last_modified, full_name')
 
-ScanProps = namedtuple('ScanProps', 'dir_name, do_recurse')
+TodoContent = namedtuple('TodoContent', 'last_modified, full_name, todo_items')
 
 
 #dirs_to_scan = [ScanProps('~/Desktop/wemDesk/txt', True)]
@@ -149,12 +151,26 @@ for a in file_list:
 
 print('READ CONTENTS')
 
+todo_list = []
+
 for a in file_list:
     print("---[{0}]".format(a.full_name))    
 
     todo_items = get_todo_items(a.full_name)
-    for item in todo_items:
+
+    #for item in todo_items:
+    #    print(item)
+
+    todo_list.append(TodoContent(a.last_modified, a.full_name, todo_items))
+    
+
+print('LIST ITEMS')
+for todo_item in todo_list:
+    print(todo_item.full_name)
+    print(todo_item.last_modified)
+    for item in todo_item.todo_items:
         print(item)
+
 
 
 with open(out_file_name, 'w') as output_file:
