@@ -1,5 +1,47 @@
 
+#wrapper {
+    padding: 10px;
+}
+
 .fileheader {
+    margin-top: 10px;
+    /*
     border-color: blue;
     border-style: solid;
+    */
+    border: 1px solid rgb(95, 238, 238);
+    background-color: rgb(207, 240, 240);
+    padding: 10px;
 }
+
+.filename {
+    font-family: monospace;
+    font-size: large;
+    color: navy;
+}
+
+.filetime {
+    font-family: monospace;
+    font-size: small;
+    color: darkslategrey;  
+    margin-left: 5px;
+}
+
+/* .filecontent {
+    margin-left: 20px;
+    margin-right: 20px;
+} */
+
+.item0 {
+    background-color: rgb(232, 248, 250);
+}
+
+.item1 {
+    background-color: rgb(250, 250, 240);
+}
+
+.item0, .item1 {
+    padding-left: 10px;
+    padding-top: 5px;
+}
+
