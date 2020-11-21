@@ -5,7 +5,7 @@
 #
 # 
 #
-# 2020-11-20
+# 2020-11-21
 #----------------------------------------------------------------------
 
 
@@ -25,7 +25,11 @@ dirs_to_scan = [ScanProps('./test', True)]
 
 file_specs = ['^notes.*.txt', '.*notes.txt', '^todo.*.txt', '.*-todo.txt']
 
-output_name = Path.cwd() / "todolist.html"
+css_file_name = Path.cwd() / "style.css"
+
+do_embed_css = True
+
+out_file_name = Path.cwd() / "todolist.html"
 
 
 def matches_filespec(file_name):
@@ -79,19 +83,49 @@ def get_todo_items(file_name):
 
 
 # *!* NEXT: html_style
-def html5_head(title):
+
+#def add_line(existing_text, indent, new_text):
+#    return "{0}\n{1}{2}".format(existing_text, (" " * indent), new_text)
+
+# def style_css(indent):
+#     s = ''
+#     s = add_line(s, indent, "<style>")
+#     s = add_line(s, indent, "</style>")
+#     return s
+
+
+def get_css(indent_len):
+    css = ''
+    indent = ' ' * indent_len
+    with open(css_file_name, 'r') as css_file:
+        lines = css_file.readlines()
+        for line in lines:
+            if len(line.strip()) > 0:
+                css += "{0}{1}".format(indent, line)
+    return f"{css}\n"
+
+
+def html_head(title):
     s = "<!DOCTYPE html>\n"
     s += "<html lang=""en"">\n"
     s += "<head>\n"
     s += "    <meta charset=""UTF-8"">\n"
     s += "    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">\n"
     s += f"    <title>{title}</title>\n"
+    
+    if do_embed_css:
+        s += "    <style>\n"
+        s += get_css(8)
+        s += "    </style>\n"
+    else:
+        s += "    <link rel=""stylesheet"" href=""style.css"" />\n"
+
     s += "</head>\n"
     s += "<body>\n"
     return s
 
 
-def html5_tail():
+def html_tail():
     s = "</body>\n"
     s += "</html>\n"
     return s
@@ -123,10 +157,11 @@ for a in file_list:
         print(item)
 
 
-with open(output_name, 'w') as output_file:
-    output_file.write(html5_head('TEST'))
+with open(out_file_name, 'w') as output_file:
+    output_file.write(html_head('TEST'))
     output_file.write("<h1>TEST</h1>\n")
-    output_file.write(html5_tail())
+    output_file.write("<div class=""fileheader"">File Header</div>\n")
+    output_file.write(html_tail())
 
 
 print('Done.')
