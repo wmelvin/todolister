@@ -17,9 +17,9 @@ import re
 
 ScanProps = namedtuple('ScanProps', 'dir_name, do_recurse')
 
-TodoFile = namedtuple('TodoFile', 'last_modified, full_name')
+FileInfo = namedtuple('FileInfo', 'last_modified, full_name')
 
-TodoContent = namedtuple('TodoContent', 'last_modified, full_name, todo_items')
+TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 
 
 #dirs_to_scan = [ScanProps('~/Desktop/wemDesk/txt', True)]
@@ -29,7 +29,7 @@ file_specs = ['^notes.*.txt', '.*notes.txt', '^todo.*.txt', '.*-todo.txt']
 
 css_file_name = Path.cwd() / "style.css"
 
-do_embed_css = True
+do_embed_css = False
 
 out_file_name = Path.cwd() / "todolist.html"
 
@@ -51,7 +51,7 @@ def get_matching_files(dir_name, do_recurse):
     for f in [x for x in p.iterdir() if x.is_file()]:
         if matches_filespec(f.name):
             ts = datetime.fromtimestamp(f.stat().st_mtime)
-            file_list.append(TodoFile(ts.strftime('%Y-%m-%dT%H:%M:%S'), str(f)))
+            file_list.append(FileInfo(ts.strftime('%Y-%m-%dT%H:%M:%S'), str(f)))
 
 
 def get_todo_items(file_name):
@@ -82,18 +82,6 @@ def get_todo_items(file_name):
             todo_text = ''
 
     return todo_items
-
-
-# *!* NEXT: html_style
-
-#def add_line(existing_text, indent, new_text):
-#    return "{0}\n{1}{2}".format(existing_text, (" " * indent), new_text)
-
-# def style_css(indent):
-#     s = ''
-#     s = add_line(s, indent, "<style>")
-#     s = add_line(s, indent, "</style>")
-#     return s
 
 
 def get_css(indent_len):
@@ -133,6 +121,32 @@ def html_tail():
     return s
 
 
+def todo_file_html(file_name, last_modified):
+    s = "<div class=""fileheader"">\n"
+    s += f"<p>{file_name}</p>\n"
+    s += f"<p>{last_modified}</p>\n"
+    s += "</div>\n"
+    return s
+
+
+def html_text(text):
+    s = text.replace("&", "&amp;")
+    #s = s.replace(" ", "&nbsp;")
+    s = s.replace("<", "&lt;")
+    s = s.replace(">", "&gt;")
+    #s = s.replace("\n", "<br />\n")
+    return s
+
+
+def todo_item_html(item, row):
+    s = "<div class=""item{0}"">\n".format(row % 2)
+
+    #s += f"<p>{html_text(item)}</p>\n"
+    s += f"<pre>\n{html_text(item)}\n</pre>\n"
+
+    s += "</div>\n"
+    return s
+
 
 #----------------------------------------------------------------------
 
@@ -151,32 +165,40 @@ for a in file_list:
 
 print('READ CONTENTS')
 
-todo_list = []
+todo_files = []
 
-for a in file_list:
-    print("---[{0}]".format(a.full_name))    
+for file_info in file_list:
+    print("Reading file [{0}]".format(file_info.full_name))    
+    items = get_todo_items(file_info.full_name)
+    todo_files.append(TodoFile(file_info.last_modified, file_info.full_name, items))
 
-    todo_items = get_todo_items(a.full_name)
-
-    #for item in todo_items:
-    #    print(item)
-
-    todo_list.append(TodoContent(a.last_modified, a.full_name, todo_items))
-    
 
 print('LIST ITEMS')
-for todo_item in todo_list:
-    print(todo_item.full_name)
-    print(todo_item.last_modified)
-    for item in todo_item.todo_items:
+for todo_file in todo_files:
+    print(todo_file.full_name)
+    print(todo_file.last_modified)
+    for item in todo_file.todo_items:
         print(item)
 
+
+print(f"\n")
 
 
 with open(out_file_name, 'w') as output_file:
     output_file.write(html_head('TEST'))
-    output_file.write("<h1>TEST</h1>\n")
-    output_file.write("<div class=""fileheader"">File Header</div>\n")
+    
+    #output_file.write("<h1>TEST</h1>\n")
+    #output_file.write("<div class=""fileheader"">File Header</div>\n")
+
+    output_file.write("<h1>To-do List</h1>")
+
+    for todo_file in todo_files:
+        output_file.write(todo_file_html(todo_file.full_name, todo_file.last_modified))
+        row = 0
+        for item in todo_file.todo_items:
+            row += 1
+            output_file.write(todo_item_html(item, row))
+
     output_file.write(html_tail())
 
 
