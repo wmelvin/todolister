@@ -22,17 +22,24 @@ FileInfo = namedtuple('FileInfo', 'last_modified, full_name')
 TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 
 
-#dirs_to_scan = [ScanProps('~/Desktop/wemDesk/txt', True)]
-dirs_to_scan = [ScanProps('./test', True)]
+#dirs_to_scan = [ScanProps('./test', True)]
+
+dirs_to_scan = [ScanProps('/home/bill', True)]
+
+# dirs_to_scan = [
+#     ScanProps('/blah/blah/blah/blah', True),
+#     ScanProps('/home/bill', True),
+# ]
+
 
 file_specs = ['^notes.*.txt', '.*notes.txt', '^todo.*.txt', '.*-todo.txt']
 
-css_file_name = Path.cwd() / "style.css"
-
-css_mode = 2  
+css_mode = 2
 # 0 = link to external css file.
-# 1 = embed from external css file. 
+# 1 = embed from external css file.
 # 2 = embed from function embed_style.
+
+css_file_name = Path.cwd() / "style.css"
 
 out_file_name = Path.cwd() / "todolist.html"
 
@@ -46,24 +53,23 @@ def matches_filespec(file_name):
 
 def get_matching_files(dir_name, do_recurse):
     p = Path(dir_name).resolve()
-    
-    if do_recurse:
-        for d in [x for x in p.iterdir() if x.is_dir()]:
-            get_matching_files(d, do_recurse)
 
     for f in [x for x in p.iterdir() if x.is_file()]:
         if matches_filespec(f.name):
             ts = datetime.fromtimestamp(f.stat().st_mtime)
-            #file_list.append(FileInfo(ts.strftime('%Y-%m-%dT%H:%M:%S'), str(f)))
             file_list.append(FileInfo(ts.strftime('%Y-%m-%d %H:%M'), str(f)))
+
+    if do_recurse:
+        for d in [x for x in p.iterdir() if x.is_dir() and not x.is_symlink()]:
+            get_matching_files(d, do_recurse)
 
 
 def get_todo_items(file_name):
     todo_items = []
-    with open(file_name, 'r') as text_file:
+    with open(file_name, 'r', errors='replace') as text_file:
         in_todo = False
         todo_text = ''
-        lines = text_file.readlines()        
+        lines = text_file.readlines()
         for line in lines:
             stripped = line.strip()
             if in_todo:
@@ -75,13 +81,13 @@ def get_todo_items(file_name):
                 else:
                     #todo_text += "{0}\n".format(line)
                     todo_text += line
-            else: 
+            else:
                 if stripped.startswith('[ ]'):
                     in_todo = True
                     #todo_text += "{0}\n".format(line)
                     todo_text += line
 
-        # Save last item, in case there were no blank lines at the 
+        # Save last item, in case there were no blank lines at the
         # end of the file.
         if len(todo_text) > 0:
             todo_items.append(todo_text)
@@ -103,7 +109,7 @@ def get_css_from_file(indent_len):
 
 def embed_style():
     # Changes made in external css file pasted here from html output
-    # after running with css_mode = 1. 
+    # after running with css_mode = 1.
     return '''
     <style>
         #wrapper {
@@ -112,15 +118,16 @@ def embed_style():
         #content {
             max-width: 960px;
         }
+        #footer {
+            border-top: 2px solid lightslategray;
+            font-family: monospace;
+            font-size: medium;
+            color: navy;
+        }
         .fileheader {
-            margin-top: 10px;
-            /*
-            border-color: blue;
-            border-style: solid;
-            */
             border: 1px solid rgb(95, 238, 238);    
             background-color: rgb(207, 240, 240);
-            padding: 10px;
+            padding-left: 10px;
             border-radius: 12px;
         }
         .filename {
@@ -137,19 +144,21 @@ def embed_style():
         .filecontent {
             margin-left: 20px;
             margin-right: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+        }
+        pre {
+            margin: 0px;
         }
         .item0, .item1 {
             padding-left: 10px;
             padding-top: 5px;
             border-radius: 8px;
+            margin: 4px 0 8px;
         }
         .item0 {
             background-color: rgb(232, 248, 250);
         }
         .item1 {
-            /* background-color: rgb(250, 250, 240); */
-            /* background-color: rgb(250, 249, 240); */
             background-color: rgb(250, 250, 232);
         }
     </style>''' + "\n"
@@ -162,7 +171,7 @@ def html_head(title):
     s += "    <meta charset=\"UTF-8\">\n"
     s += "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
     s += "    <title>{0}</title>\n".format(title)
-    
+
     if css_mode == 2:
         s += embed_style()
     elif css_mode == 1:
@@ -186,7 +195,7 @@ def html_tail():
 def todo_file_html(file_name, last_modified):
     s = "<div class=\"fileheader\">\n"
     s += "  <p class=\"filename\">{0}</p>\n".format(file_name)
-    s += "  <p class=\"filetime\">{0}</p>\n".format(last_modified)
+    s += "  <p class=\"filetime\">Modified {0}</p>\n".format(last_modified)
     s += "</div>\n"
     return s
 
@@ -207,65 +216,60 @@ def todo_item_html(item, row):
     return s
 
 
-#----------------------------------------------------------------------
-
-file_list = []
-
-for dir in dirs_to_scan:
-    get_matching_files(dir.dir_name, dir.do_recurse)
-
-file_list.sort()
-file_list.reverse()
-
-# print('LIST OF FILES')
-# for a in file_list:
-#     print(a)
-
-print('READ CONTENTS')
-
-todo_files = []
-
-for file_info in file_list:
-    print("Reading file [{0}]".format(file_info.full_name))    
-    items = get_todo_items(file_info.full_name)
-    todo_files.append(TodoFile(file_info.last_modified, file_info.full_name, items))
-
-
-# print('LIST ITEMS')
-# for todo_file in todo_files:
-#     print(todo_file.full_name)
-#     print(todo_file.last_modified)
-#     for item in todo_file.todo_items:
-#         print(item)
-# print(f"\n")
-
-
 # Oh no, Pascal!
 def writeln(a_file, a_string):
     a_file.write(a_string + "\n")
 
 
+#----------------------------------------------------------------------
+
+file_list = []
+
+for dir in dirs_to_scan:
+    print(f"Scanning folder [{dir.dir_name}]")
+    get_matching_files(dir.dir_name, dir.do_recurse)
+
+file_list.sort()
+file_list.reverse()
+
+todo_files = []
+
+for file_info in file_list:
+    print("Reading file [{0}]".format(file_info.full_name))
+    items = get_todo_items(file_info.full_name)
+    todo_files.append(TodoFile(file_info.last_modified, file_info.full_name, items))
+
+
+print("Writing file [{0}].".format(out_file_name))
+
 with open(out_file_name, 'w') as f:
     writeln(f, html_head('ToDo Items'))
-    
+
     writeln(f, '<div id="wrapper">')
     writeln(f, '<div id="content">')
 
     writeln(f, '<h1>To-do Items</h1>')
 
     for todo_file in todo_files:
-        writeln(f, todo_file_html(todo_file.full_name, todo_file.last_modified))
-        writeln(f, '<div class="filecontent">')
-        row = 0
-        for item in todo_file.todo_items:
-            row += 1
-            writeln(f, todo_item_html(item, row))
-        writeln(f, '</div>  <!--filecontent  -->')
-        writeln(f, '')
+        if len(todo_file.todo_items) > 0:
+            writeln(f, todo_file_html(todo_file.full_name, todo_file.last_modified))
+            writeln(f, '<div class="filecontent">')
+            row = 0
+            for item in todo_file.todo_items:
+                row += 1
+                writeln(f, todo_item_html(item, row))
+            writeln(f, '</div>  <!--filecontent  -->')
+            writeln(f, '')
 
+    writeln(f, '<div id="footer">')
+    writeln(f, 'Created {0} by todolister.py.'.format(datetime.now().strftime('%Y-%m-%d %H:%M')))
+    writeln(f, '</div>')
+    writeln(f, '')
     writeln(f, '</div>  <!--content  -->')
     writeln(f, '</div>  <!--wrapper  -->')
+
+
     writeln(f, html_tail())
 
 
-print(f"\n{out_file_name} done.")
+print("Done.")
