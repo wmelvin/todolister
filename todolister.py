@@ -5,7 +5,7 @@
 #
 # 
 #
-# 2020-11-21
+# 2020-11-22
 #----------------------------------------------------------------------
 
 
@@ -29,7 +29,10 @@ file_specs = ['^notes.*.txt', '.*notes.txt', '^todo.*.txt', '.*-todo.txt']
 
 css_file_name = Path.cwd() / "style.css"
 
-do_embed_css = False
+css_mode = 2  
+# 0 = link to external css file.
+# 1 = embed from external css file. 
+# 2 = embed from function embed_style.
 
 out_file_name = Path.cwd() / "todolist.html"
 
@@ -87,7 +90,7 @@ def get_todo_items(file_name):
     return todo_items
 
 
-def get_css(indent_len):
+def get_css_from_file(indent_len):
     css = ''
     indent = ' ' * indent_len
     with open(css_file_name, 'r') as css_file:
@@ -98,23 +101,79 @@ def get_css(indent_len):
     return f"{css}\n"
 
 
+def embed_style():
+    # Changes made in external css file pasted here from html output
+    # after running with css_mode = 1. 
+    return '''
+    <style>
+        #wrapper {
+            padding: 10px;
+        }
+        #content {
+            max-width: 960px;
+        }
+        .fileheader {
+            margin-top: 10px;
+            /*
+            border-color: blue;
+            border-style: solid;
+            */
+            border: 1px solid rgb(95, 238, 238);    
+            background-color: rgb(207, 240, 240);
+            padding: 10px;
+            border-radius: 12px;
+        }
+        .filename {
+            font-family: monospace;
+            font-size: large;
+            color: navy;
+        }
+        .filetime {
+            font-family: monospace;
+            font-size: small;
+            color: darkslategrey;  
+            margin-left: 5px;
+        }
+        .filecontent {
+            margin-left: 20px;
+            margin-right: 20px;
+            margin-bottom: 20px;
+        }
+        .item0, .item1 {
+            padding-left: 10px;
+            padding-top: 5px;
+            border-radius: 8px;
+        }
+        .item0 {
+            background-color: rgb(232, 248, 250);
+        }
+        .item1 {
+            /* background-color: rgb(250, 250, 240); */
+            /* background-color: rgb(250, 249, 240); */
+            background-color: rgb(250, 250, 232);
+        }
+    </style>''' + "\n"
+
+
 def html_head(title):
     s = "<!DOCTYPE html>\n"
-    s += "<html lang=""en"">\n"
+    s += "<html lang=\"en\">\n"
     s += "<head>\n"
-    s += "    <meta charset=""UTF-8"">\n"
-    s += "    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">\n"
-    s += f"    <title>{title}</title>\n"
+    s += "    <meta charset=\"UTF-8\">\n"
+    s += "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
+    s += "    <title>{0}</title>\n".format(title)
     
-    if do_embed_css:
+    if css_mode == 2:
+        s += embed_style()
+    elif css_mode == 1:
         s += "    <style>\n"
-        s += get_css(8)
+        s += get_css_from_file(indent_len = 8)
         s += "    </style>\n"
     else:
-        s += "    <link rel=""stylesheet"" href=""style.css"" />\n"
+        s += "    <link rel=\"stylesheet\" href=\"style.css\" />\n"
 
     s += "</head>\n"
-    s += "<body>\n\n"
+    s += "<body>\n"
     return s
 
 
@@ -125,10 +184,10 @@ def html_tail():
 
 
 def todo_file_html(file_name, last_modified):
-    s = "<div class=""fileheader"">\n"
-    s += "    <p class=""filename"">{0}</p>\n".format(file_name)
-    s += "    <p class=""filetime"">{0}</p>\n".format(last_modified)
-    s += "</div>\n\n"
+    s = "<div class=\"fileheader\">\n"
+    s += "  <p class=\"filename\">{0}</p>\n".format(file_name)
+    s += "  <p class=\"filetime\">{0}</p>\n".format(last_modified)
+    s += "</div>\n"
     return s
 
 
@@ -142,9 +201,9 @@ def html_text(text):
 
 
 def todo_item_html(item, row):
-    s = "<div class=""item{0}"">\n".format(row % 2)
+    s = "<div class=\"item{0}\">\n".format(row % 2)
     s += "<pre>\n{0}\n</pre>\n".format(html_text(item))
-    s += "</div>\n\n"
+    s += "</div>\n"
     return s
 
 
@@ -181,22 +240,32 @@ for file_info in file_list:
 # print(f"\n")
 
 
+# Oh no, Pascal!
+def writeln(a_file, a_string):
+    a_file.write(a_string + "\n")
+
+
 with open(out_file_name, 'w') as f:
-    f.write(html_head('ToDo Items'))
-    f.write("<div id=""wrapper"">\n")
-    f.write("    <h1>To-do Items</h1>\n")
+    writeln(f, html_head('ToDo Items'))
+    
+    writeln(f, '<div id="wrapper">')
+    writeln(f, '<div id="content">')
+
+    writeln(f, '<h1>To-do Items</h1>')
 
     for todo_file in todo_files:
-        f.write(todo_file_html(todo_file.full_name, todo_file.last_modified))
-        f.write("<div class=""filecontent"">\n")
+        writeln(f, todo_file_html(todo_file.full_name, todo_file.last_modified))
+        writeln(f, '<div class="filecontent">')
         row = 0
         for item in todo_file.todo_items:
             row += 1
-            f.write(todo_item_html(item, row))
-        f.write("</div>  <!-- end: filecontent --> \n")
+            writeln(f, todo_item_html(item, row))
+        writeln(f, '</div>  <!--filecontent  -->')
+        writeln(f, '')
 
-    f.write("</div>  <!-- end: wrapper --> \n")
-    f.write(html_tail())
+    writeln(f, '</div>  <!--content  -->')
+    writeln(f, '</div>  <!--wrapper  -->')
+    writeln(f, html_tail())
 
 
 print(f"\n{out_file_name} done.")
