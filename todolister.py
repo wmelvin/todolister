@@ -5,15 +5,14 @@
 #
 # 
 #
-# 2020-11-22
+# 2020-11-24
 #----------------------------------------------------------------------
-
 
 from pathlib import Path
 from collections import namedtuple
 from datetime import datetime
 import re
-
+import argparse
 
 ScanProps = namedtuple('ScanProps', 'dir_name, do_recurse')
 
@@ -22,9 +21,15 @@ FileInfo = namedtuple('FileInfo', 'last_modified, full_name')
 TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 
 
-#dirs_to_scan = [ScanProps('./test', True)]
+css_mode = 0
+# 0 = link to external css file (use for trying css changes).
+# 1 = embed from external css file (use to get css to update embed_style).
+# 2 = embed from function embed_style.
+
 
 dirs_to_scan = [ScanProps('/home/bill', True)]
+
+#dirs_to_scan = [ScanProps('./test', True)]
 
 # dirs_to_scan = [
 #     ScanProps('/blah/blah/blah/blah', True),
@@ -33,11 +38,6 @@ dirs_to_scan = [ScanProps('/home/bill', True)]
 
 
 file_specs = ['^notes.*.txt', '.*notes.txt', '^todo.*.txt', '.*-todo.txt']
-
-css_mode = 2
-# 0 = link to external css file.
-# 1 = embed from external css file.
-# 2 = embed from function embed_style.
 
 css_file_name = Path.cwd() / "style.css"
 
@@ -219,6 +219,38 @@ def todo_item_html(item, row):
 # Oh no, Pascal!
 def writeln(a_file, a_string):
     a_file.write(a_string + "\n")
+
+
+#----------------------------------------------------------------------
+
+# Note: Using the term 'folder' instead of 'directory' in descriptions.
+
+ap = argparse.ArgumentParser(
+	description =
+	'Read text files containing to-do markers and create a HTML report.')
+
+ap.add_argument(
+	'folders', 
+    nargs = '?',
+    default = Path.cwd(),
+	action = 'store', 
+	help = 'Folder(s) to scan. Use a semi-colon (;) to separate multiple folders.')
+
+ap.add_argument(
+	'-f', '--options-file', 
+	dest = 'optfile', 
+	action = 'store', 
+	help = 'Name of options file.')
+
+ap.add_argument(
+	'-r', '--recurse', 
+	dest = 'recurse', 
+	action = 'store_true', 
+	help = 'Recurse sub-folders. Applies to all folders specified. '
+        + 'Use an options file to specify the recurse option for '
+        + 'individual folders.')
+
+args = ap.parse_args()
 
 
 #----------------------------------------------------------------------
