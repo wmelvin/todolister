@@ -5,7 +5,7 @@
 #
 # 
 #
-# 2020-11-24
+# 2020-11-25
 #----------------------------------------------------------------------
 
 from pathlib import Path
@@ -14,6 +14,7 @@ from datetime import datetime
 import re
 import argparse
 
+
 ScanProps = namedtuple('ScanProps', 'dir_name, do_recurse')
 
 FileInfo = namedtuple('FileInfo', 'last_modified, full_name')
@@ -21,13 +22,15 @@ FileInfo = namedtuple('FileInfo', 'last_modified, full_name')
 TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 
 
+app_version = '20201125.1'
+
 css_mode = 0
 # 0 = link to external css file (use for trying css changes).
 # 1 = embed from external css file (use to get css to update embed_style).
 # 2 = embed from function embed_style.
 
 
-dirs_to_scan = [ScanProps('/home/bill', True)]
+#dirs_to_scan = [ScanProps('/home/bill', True)]
 
 #dirs_to_scan = [ScanProps('./test', True)]
 
@@ -37,7 +40,7 @@ dirs_to_scan = [ScanProps('/home/bill', True)]
 # ]
 
 
-file_specs = ['^notes.*.txt', '.*notes.txt', '^todo.*.txt', '.*-todo.txt']
+default_file_specs = ['^notes.*.txt', '.*notes.txt', '^todo.*.txt', '.*-todo.txt']
 
 css_file_name = Path.cwd() / "style.css"
 
@@ -221,6 +224,16 @@ def writeln(a_file, a_string):
     a_file.write(a_string + "\n")
 
 
+def get_file_specs(default_specs, opt_content):
+    return default_specs
+    # *!* mas code por favor
+
+
+def get_dirs_to_scan(default_dirs, opt_content):
+    return default_dirs
+    # *!* mas code por favor
+
+
 #----------------------------------------------------------------------
 
 # Note: Using the term 'folder' instead of 'directory' in descriptions.
@@ -231,10 +244,10 @@ ap = argparse.ArgumentParser(
 
 ap.add_argument(
 	'folders', 
-    nargs = '?',
-    default = Path.cwd(),
+    nargs = '*',
+    default = [str(Path.cwd())],
 	action = 'store', 
-	help = 'Folder(s) to scan. Use a semi-colon (;) to separate multiple folders.')
+	help = 'Folder(s) to scan. Multiple folders can be specified.')
 
 ap.add_argument(
 	'-f', '--options-file', 
@@ -251,6 +264,31 @@ ap.add_argument(
         + 'individual folders.')
 
 args = ap.parse_args()
+
+#if not os.path.exists(args.dirpath):
+#	raise SystemExit('Path not found: ' + args.dirpath)
+
+print(f"optfile={args.optfile}")
+print(f"recurse={args.recurse}")
+
+
+dirs_to_scan = []
+for folder in args.folders:
+    print(f"Folder {folder}")
+    dirs_to_scan.append(ScanProps(folder, args.recurse))
+
+if args.optfile is None:
+    file_specs = default_file_specs
+else:
+    if not os.path.exists(args.optfile):
+    	raise SystemExit(f"Options file not found: {args.optfile}")
+    with open(args.optfile, 'r') as f:
+        opt_lines = f.readlines()
+    file_specs = get_file_specs(default_file_specs, opt_lines)
+    dirs_to_scan = get_dirs_to_scan(dirs_to_scan, opt_lines)
+
+    
+#raise SystemExit('STOPPED')
 
 
 #----------------------------------------------------------------------
