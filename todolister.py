@@ -224,14 +224,49 @@ def writeln(a_file, a_string):
     a_file.write(a_string + "\n")
 
 
-def get_file_specs(default_specs, opt_content):
-    return default_specs
-    # *!* mas code por favor
+def get_option_entries(opt_section, opt_content):
+    entries = []
+    in_section = False
+    for line in opt_content:
+        s = line.strip()
+        if len(s) == 0:
+            in_section = False
+        else:
+            if in_section:
+                # Handle new section w/o blank lines between.
+                if s.startswith('['):
+                    in_section = False
+                # Support whole-line comments identified by '#' (ignore them).
+                elif not s.startswith('#'):
+                    entries.append(s)
+            if s == opt_section:
+                in_section = True
+    return entries
 
+
+def get_file_specs(default_specs, opt_content):
+    a = get_option_entries('[match]', opt_content)
+    if len(a) == 0:
+        return default_specs
+    else:
+        return [b.strip("'\" ") for b in a]
+    
 
 def get_dirs_to_scan(default_dirs, opt_content):
-    return default_dirs
-    # *!* mas code por favor
+    a = get_option_entries('[folders]', opt_content)
+    if len(a) == 0:
+        return default_dirs
+    else:
+        dirs = []
+        for e in a:
+            r = False
+            s = e.strip()
+            if s.endswith('+'):
+                r = True
+                s = s.strip('+')
+            s = s.strip("'\" ")
+            dirs.append(ScanProps(s, r))
+        return dirs
 
 
 #----------------------------------------------------------------------
@@ -274,21 +309,25 @@ print(f"recurse={args.recurse}")
 
 dirs_to_scan = []
 for folder in args.folders:
+    folder = str(Path(folder).resolve())
     print(f"Folder {folder}")
+    if not Path(folder).exists():
+    	raise SystemExit('Path not found: ' + folder)
     dirs_to_scan.append(ScanProps(folder, args.recurse))
 
 if args.optfile is None:
     file_specs = default_file_specs
 else:
-    if not os.path.exists(args.optfile):
-    	raise SystemExit(f"Options file not found: {args.optfile}")
-    with open(args.optfile, 'r') as f:
+    p = Path(args.optfile).resolve()
+    if not p.exists():
+    	raise SystemExit(f"Options file not found: {p}")
+    with open(p, 'r') as f:
         opt_lines = f.readlines()
     file_specs = get_file_specs(default_file_specs, opt_lines)
     dirs_to_scan = get_dirs_to_scan(dirs_to_scan, opt_lines)
 
     
-#raise SystemExit('STOPPED')
+# raise SystemExit('STOPPED')
 
 
 #----------------------------------------------------------------------
