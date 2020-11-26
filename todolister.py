@@ -5,7 +5,7 @@
 #
 # 
 #
-# 2020-11-25
+# 2020-11-26
 #----------------------------------------------------------------------
 
 from pathlib import Path
@@ -22,7 +22,7 @@ FileInfo = namedtuple('FileInfo', 'last_modified, full_name')
 TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 
 
-app_version = '20201125.1'
+app_version = '20201126.1'
 
 css_mode = 0
 # 0 = link to external css file (use for trying css changes).
@@ -30,21 +30,11 @@ css_mode = 0
 # 2 = embed from function embed_style.
 
 
-#dirs_to_scan = [ScanProps('/home/bill', True)]
-
-#dirs_to_scan = [ScanProps('./test', True)]
-
-# dirs_to_scan = [
-#     ScanProps('/blah/blah/blah/blah', True),
-#     ScanProps('/home/bill', True),
-# ]
-
-
 default_file_specs = ['^notes.*.txt', '.*notes.txt', '^todo.*.txt', '.*-todo.txt']
 
 css_file_name = Path.cwd() / "style.css"
 
-out_file_name = Path.cwd() / "todolist.html"
+default_output_file = Path.cwd() / "todolist.html"
 
 
 def matches_filespec(file_name):
@@ -225,7 +215,7 @@ def writeln(a_file, a_string):
 
 
 def get_option_entries(opt_section, opt_content):
-    entries = []
+    result = []
     in_section = False
     for line in opt_content:
         s = line.strip()
@@ -238,35 +228,44 @@ def get_option_entries(opt_section, opt_content):
                     in_section = False
                 # Support whole-line comments identified by '#' (ignore them).
                 elif not s.startswith('#'):
-                    entries.append(s)
+                    result.append(s)
             if s == opt_section:
                 in_section = True
-    return entries
+    return result
 
 
 def get_file_specs(default_specs, opt_content):
-    a = get_option_entries('[match]', opt_content)
-    if len(a) == 0:
+    entries = get_option_entries('[match]', opt_content)
+    if len(entries) == 0:
         return default_specs
     else:
-        return [b.strip("'\" ") for b in a]
+        return [entry.strip("'\" ") for entry in entries]
     
 
 def get_dirs_to_scan(default_dirs, opt_content):
-    a = get_option_entries('[folders]', opt_content)
-    if len(a) == 0:
+    entries = get_option_entries('[folders]', opt_content)
+    if len(entries) == 0:
         return default_dirs
     else:
         dirs = []
-        for e in a:
-            r = False
-            s = e.strip()
+        for entry in entries:
+            recurse = False
+            s = entry.strip()
             if s.endswith('+'):
-                r = True
+                recurse = True
                 s = s.strip('+')
             s = s.strip("'\" ")
-            dirs.append(ScanProps(s, r))
+            dirs.append(ScanProps(s, recurse))
         return dirs
+
+
+def get_output_filename(given_filename):
+    p = Path(given_filename).resolve()
+    if p.suffix.lower() == '.html':
+        return str(p)
+    else:
+        return str(p.with_suffix('.html'))
+
 
 
 #----------------------------------------------------------------------
@@ -297,6 +296,14 @@ ap.add_argument(
 	help = 'Recurse sub-folders. Applies to all folders specified. '
         + 'Use an options file to specify the recurse option for '
         + 'individual folders.')
+
+ap.add_argument(
+	'-o', '--output-file', 
+	dest = 'output_file',
+    default = default_output_file,
+	action = 'store', 
+	help = "Name of output file. The '.html' extension will be " 
+        + "added if not specified." )
 
 args = ap.parse_args()
 
@@ -348,6 +355,7 @@ for file_info in file_list:
     items = get_todo_items(file_info.full_name)
     todo_files.append(TodoFile(file_info.last_modified, file_info.full_name, items))
 
+out_file_name = get_output_filename(args.output_file)
 
 print("Writing file [{0}].".format(out_file_name))
 
@@ -371,13 +379,14 @@ with open(out_file_name, 'w') as f:
             writeln(f, '')
 
     writeln(f, '<div id="footer">')
-    writeln(f, 'Created {0} by todolister.py.'.format(datetime.now().strftime('%Y-%m-%d %H:%M')))
+    writeln(f, 'Created {0} by todolister.py (version {1}).'.format(
+        datetime.now().strftime('%Y-%m-%d %H:%M'), 
+        app_version
+    ))
     writeln(f, '</div>')
     writeln(f, '')
     writeln(f, '</div>  <!--content  -->')
     writeln(f, '</div>  <!--wrapper  -->')
-
-
     writeln(f, html_tail())
 
 
