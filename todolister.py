@@ -218,6 +218,29 @@ def todo_item_html(item, row):
     return s
 
 
+def flagged_item_html(item, row):
+
+    # *!* Next: Add file name that is link to file in main list.
+    
+    s = "<div class=\"flagged{0}\">\n".format(row % 2)
+    s += "<pre>\n{0}\n</pre>\n".format(html_text(item.item_text))
+    s += "</div>\n"
+    return s
+
+
+def flagged_items_html(items):
+    if len(items) == 0:
+        return ''
+    s = "<div class=\"flagged_section\">\n"
+    s += "<h2>Flagged Items</h2>\n"
+    s += "<div class=\"flagged_items\">\n"
+    for item in items:
+        s += item
+    s += "</div>  <!--end flagged_items -->\n"
+    s += "</div>  <!--end flagged_section -->\n"
+    return s
+
+
 def get_option_entries(opt_section, opt_content):
     result = []
     in_section = False
@@ -372,8 +395,19 @@ with open(out_file_name, 'w') as f:
 
     writeln(f, '<h1>To-do Items</h1>')
 
-    #TODO: Write flagged items section.
+    # Write list of flagged items.
+    flagged_items = []
+    row = 0
+    for todo_file in todo_files:
+        if len(todo_file.todo_items) > 0:
+            for item in todo_file.todo_items:
+                if item.is_flagged:
+                    row += 1
+                    flagged_items.append(flagged_item_html(item, row))
+    writeln(f, flagged_items_html(flagged_items))
 
+    # Write main section listing files with to-do items.
+    writeln(f, '<h2>Files with To-do Items</h2>')
     for todo_file in todo_files:
         if len(todo_file.todo_items) > 0:
             writeln(f, todo_file_html(todo_file.full_name, todo_file.last_modified))
@@ -382,7 +416,7 @@ with open(out_file_name, 'w') as f:
             for item in todo_file.todo_items:
                 row += 1
                 writeln(f, todo_item_html(item, row))
-            writeln(f, '</div>  <!--filecontent  -->')
+            writeln(f, '</div>  <!--end filecontent -->')
             writeln(f, '')
 
     writeln(f, '<div id="footer">')
@@ -392,8 +426,8 @@ with open(out_file_name, 'w') as f:
     ))
     writeln(f, '</div>')
     writeln(f, '')
-    writeln(f, '</div>  <!--content  -->')
-    writeln(f, '</div>  <!--wrapper  -->')
+    writeln(f, '</div>  <!--end content -->')
+    writeln(f, '</div>  <!--end wrapper -->')
     writeln(f, html_tail())
 
 

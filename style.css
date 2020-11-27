@@ -58,3 +58,33 @@ pre {
 .item1 {
     background-color: rgb(250, 250, 232);
 }
+
+.flagged {
+    font-weight: bold;
+}
+
+/* .flagged_section {
+    border: 1px solid darkred;
+} */
+
+
+.flagged0, .flagged1 {
+    padding-left: 10px;
+    padding-top: 5px;
+    border-radius: 8px;
+    margin: 4px 0 8px;
+}
+
+.flagged0 {
+    background-color: rgb(250, 237, 232);
+}
+
+.flagged1 {
+    background-color: rgb(250, 245, 232);
+}
+
+.flagged_items {
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-bottom: 25px;
+}
