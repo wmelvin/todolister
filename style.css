@@ -8,10 +8,10 @@
 }
 
 #footer {
-    border-top: 2px solid lightslategray;
+    border-top: 2px solid rosybrown;
     font-family: monospace;
     font-size: medium;
-    color: navy;
+    color: darkolivegreen;
 }
     
 .fileheader {
@@ -63,9 +63,11 @@ pre {
     font-weight: bold;
 }
 
-/* .flagged_section {
-    border: 1px solid darkred;
-} */
+.flagged_section {
+    border-top: 2px solid rosybrown;
+    border-bottom: 2px solid rosybrown;
+    margin-bottom: 30px;
+}
 
 
 .flagged0, .flagged1 {
@@ -73,6 +75,11 @@ pre {
     padding-top: 5px;
     border-radius: 8px;
     margin: 4px 0 8px;
+}
+
+.flagged0 a, .flagged1 a {
+    font-family: monospace;
+    font-size: large;
 }
 
 .flagged0 {
@@ -87,4 +94,8 @@ pre {
     margin-left: 20px;
     margin-right: 20px;
     margin-bottom: 25px;
+}
+
+.toplink {
+    font-size: x-small;
 }

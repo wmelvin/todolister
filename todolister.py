@@ -19,7 +19,7 @@ ScanProps = namedtuple('ScanProps', 'dir_name, do_recurse')
 
 FileInfo = namedtuple('FileInfo', 'last_modified, full_name')
 
-TodoItem = namedtuple('TodoItem', 'is_flagged, is_elevated, item_text')
+TodoItem = namedtuple('TodoItem', 'is_flagged, is_elevated, item_text, source_file')
 
 TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 
@@ -32,7 +32,12 @@ css_mode = 0
 # 2 = embed from function embed_style.
 
 
-default_file_specs = ['^notes.*.txt', '.*notes.txt', '^todo.*.txt', '.*-todo.txt']
+default_file_specs = [
+    '^notes.*.txt$',
+    '.*notes.txt$',
+    '^todo.*.txt$',
+    '.*-todo.txt$'
+]
 
 css_file_name = Path.cwd() / "style.css"
 
@@ -73,7 +78,7 @@ def get_todo_items(file_name):
                 if len(stripped) == 0:
                     in_todo = False
                     if len(todo_text) > 0:
-                        todo_items.append(TodoItem(is_flagged, is_elevated, todo_text))
+                        todo_items.append(TodoItem(is_flagged, is_elevated, todo_text, file_name))
                         todo_text = ''
                         is_flagged = False
                         is_elevated = False
@@ -89,7 +94,7 @@ def get_todo_items(file_name):
         # Save last item, in case there were no blank lines at the
         # end of the file.
         if len(todo_text) > 0:
-            todo_items.append(TodoItem(is_flagged, is_elevated, todo_text))
+            todo_items.append(TodoItem(is_flagged, is_elevated, todo_text, file_name))
 
     return todo_items
 
@@ -123,7 +128,7 @@ def embed_style():
             color: navy;
         }
         .fileheader {
-            border: 1px solid rgb(95, 238, 238);    
+            border: 1px solid rgb(95, 238, 238);
             background-color: rgb(207, 240, 240);
             padding-left: 10px;
             border-radius: 12px;
@@ -136,7 +141,7 @@ def embed_style():
         .filetime {
             font-family: monospace;
             font-size: small;
-            color: darkslategrey;  
+            color: darkslategrey;
             margin-left: 5px;
         }
         .filecontent {
@@ -158,6 +163,36 @@ def embed_style():
         }
         .item1 {
             background-color: rgb(250, 250, 232);
+        }
+        .flagged {
+            font-weight: bold;
+        }
+        /* .flagged_section {
+            border: 1px solid darkred;
+        } */
+        .flagged0, .flagged1 {
+            padding-left: 10px;
+            padding-top: 5px;
+            border-radius: 8px;
+            margin: 4px 0 8px;
+        }
+        .flagged0 a, .flagged1 a {
+            font-family: monospace;
+            font-size: large;
+        }
+        .flagged0 {
+            background-color: rgb(250, 237, 232);
+        }
+        .flagged1 {
+            background-color: rgb(250, 245, 232);
+        }
+        .flagged_items {
+            margin-left: 20px;
+            margin-right: 20px;
+            margin-bottom: 25px;
+        }
+        .toplink {
+            font-size: x-small;
         }
     </style>''' + "\n"
 
@@ -192,7 +227,10 @@ def html_tail():
 
 def todo_file_html(file_name, last_modified):
     s = "<div class=\"fileheader\">\n"
-    s += "  <p class=\"filename\">{0}</p>\n".format(file_name)
+    s += "  <p class=\"filename\"><a name=\"{0}\">{1}</a></p>\n".format(
+        as_link_name(file_name),
+        file_name
+    )
     s += "  <p class=\"filetime\">Modified {0}</p>\n".format(last_modified)
     s += "</div>\n"
     return s
@@ -218,11 +256,16 @@ def todo_item_html(item, row):
     return s
 
 
-def flagged_item_html(item, row):
+def as_link_name(file_name):
+    return file_name.strip(' /\\').replace(' ','_').replace('/','-').replace('.','-')
 
-    # *!* Next: Add file name that is link to file in main list.
-    
+
+def flagged_item_html(item, row):
     s = "<div class=\"flagged{0}\">\n".format(row % 2)
+    s += "<p class=\"flink\"><a href=\"#{0}\">{1}</a></p>\n".format(
+        as_link_name(item.source_file),
+        item.source_file
+    )
     s += "<pre>\n{0}\n</pre>\n".format(html_text(item.item_text))
     s += "</div>\n"
     return s
@@ -267,7 +310,7 @@ def get_file_specs(default_specs, opt_content):
         return default_specs
     else:
         return [entry.strip("'\" ") for entry in entries]
-    
+
 
 def get_dirs_to_scan(default_dirs, opt_content):
     entries = get_option_entries('[folders]', opt_content)
@@ -301,7 +344,7 @@ def writeln(a_file, a_string):
 
 #----------------------------------------------------------------------
 
-# Note: Using the term 'folder' instead of 'directory' in argument 
+# Note: Using the term 'folder' instead of 'directory' in argument
 # descriptions.
 
 ap = argparse.ArgumentParser(
@@ -309,32 +352,38 @@ ap = argparse.ArgumentParser(
 	'Read text files containing to-do markers and create a HTML report.')
 
 ap.add_argument(
-	'folders', 
+	'folders',
     nargs = '*',
     default = [str(Path.cwd())],
-	action = 'store', 
+	action = 'store',
 	help = 'Folder(s) to scan. Multiple folders can be specified.')
 
 ap.add_argument(
-	'-f', '--options-file', 
-	dest = 'optfile', 
-	action = 'store', 
+	'-f', '--options-file',
+	dest = 'optfile',
+	action = 'store',
 	help = 'Name of options file.')
 
 ap.add_argument(
-	'-r', '--recurse', 
-	dest = 'recurse', 
-	action = 'store_true', 
+	'-r', '--recurse',
+	dest = 'recurse',
+	action = 'store_true',
 	help = 'Recurse sub-folders. Applies to all folders specified. '
         + 'Use an options file to specify the recurse option for '
         + 'individual folders.')
 
 ap.add_argument(
-	'-o', '--output-file', 
+	'-m', '--mtime-desc',
+	dest = 'mtime',
+	action = 'store_true',
+	help = 'Sort files by last-modified time in descending order.')
+
+ap.add_argument(
+	'-o', '--output-file',
 	dest = 'output_file',
     default = default_output_file,
-	action = 'store', 
-	help = "Name of output file. The '.html' extension will be " 
+	action = 'store',
+	help = "Name of output file. The '.html' extension will be "
         + "added if not specified." )
 
 args = ap.parse_args()
@@ -361,7 +410,7 @@ else:
     file_specs = get_file_specs(default_file_specs, opt_lines)
     dirs_to_scan = get_dirs_to_scan(dirs_to_scan, opt_lines)
 
-    
+
 # raise SystemExit('STOPPED')
 
 
@@ -373,8 +422,12 @@ for dir in dirs_to_scan:
     print(f"Scanning folder [{dir.dir_name}]")
     get_matching_files(dir.dir_name, dir.do_recurse)
 
-file_list.sort()
-file_list.reverse()
+if args.mtime:
+    # The last_modified field is the default for sort.
+    file_list.sort()
+    file_list.reverse()
+else:
+    file_list.sort(key=lambda item: item.full_name.lower())
 
 todo_files = []
 
@@ -393,7 +446,7 @@ with open(out_file_name, 'w') as f:
     writeln(f, '<div id="wrapper">')
     writeln(f, '<div id="content">')
 
-    writeln(f, '<h1>To-do Items</h1>')
+    writeln(f, '<h1><a name="top">To-do Items</a></h1>')
 
     # Write list of flagged items.
     flagged_items = []
@@ -416,12 +469,13 @@ with open(out_file_name, 'w') as f:
             for item in todo_file.todo_items:
                 row += 1
                 writeln(f, todo_item_html(item, row))
+            writeln(f, '<p class="toplink">(<a href="#top">top</a>)</p>')
             writeln(f, '</div>  <!--end filecontent -->')
             writeln(f, '')
 
     writeln(f, '<div id="footer">')
     writeln(f, 'Created {0} by todolister.py (version {1}).'.format(
-        datetime.now().strftime('%Y-%m-%d %H:%M'), 
+        datetime.now().strftime('%Y-%m-%d %H:%M'),
         app_version
     ))
     writeln(f, '</div>')
