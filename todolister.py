@@ -5,7 +5,7 @@
 #
 # 
 #
-# 2020-11-26
+# 2020-11-27
 #----------------------------------------------------------------------
 
 from pathlib import Path
@@ -19,10 +19,12 @@ ScanProps = namedtuple('ScanProps', 'dir_name, do_recurse')
 
 FileInfo = namedtuple('FileInfo', 'last_modified, full_name')
 
+TodoItem = namedtuple('TodoItem', 'is_flagged, is_elevated, item_text')
+
 TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 
 
-app_version = '20201126.1'
+app_version = '20201127.1'
 
 css_mode = 0
 # 0 = link to external css file (use for trying css changes).
@@ -62,6 +64,8 @@ def get_todo_items(file_name):
     with open(file_name, 'r', errors='replace') as text_file:
         in_todo = False
         todo_text = ''
+        is_flagged = False
+        is_elevated = False
         lines = text_file.readlines()
         for line in lines:
             stripped = line.strip()
@@ -69,22 +73,23 @@ def get_todo_items(file_name):
                 if len(stripped) == 0:
                     in_todo = False
                     if len(todo_text) > 0:
-                        todo_items.append(todo_text)
+                        todo_items.append(TodoItem(is_flagged, is_elevated, todo_text))
                         todo_text = ''
+                        is_flagged = False
+                        is_elevated = False
                 else:
-                    #todo_text += "{0}\n".format(line)
                     todo_text += line
             else:
                 if stripped.startswith('[ ]'):
                     in_todo = True
-                    #todo_text += "{0}\n".format(line)
+                    is_flagged = stripped.startswith('[ ]*')
+                    is_elevated = stripped.startswith('[ ]+')
                     todo_text += line
 
         # Save last item, in case there were no blank lines at the
         # end of the file.
         if len(todo_text) > 0:
-            todo_items.append(todo_text)
-            todo_text = ''
+            todo_items.append(TodoItem(is_flagged, is_elevated, todo_text))
 
     return todo_items
 
@@ -203,15 +208,14 @@ def html_text(text):
 
 
 def todo_item_html(item, row):
-    s = "<div class=\"item{0}\">\n".format(row % 2)
-    s += "<pre>\n{0}\n</pre>\n".format(html_text(item))
+    if item.is_flagged or item.is_elevated:
+        add_class = ' flagged'
+    else:
+        add_class = ''
+    s = "<div class=\"item{0}{1}\">\n".format(row % 2, add_class)
+    s += "<pre>\n{0}\n</pre>\n".format(html_text(item.item_text))
     s += "</div>\n"
     return s
-
-
-# Oh no, Pascal!
-def writeln(a_file, a_string):
-    a_file.write(a_string + "\n")
 
 
 def get_option_entries(opt_section, opt_content):
@@ -267,10 +271,15 @@ def get_output_filename(given_filename):
         return str(p.with_suffix('.html'))
 
 
+# Oh no, Pascal!
+def writeln(a_file, a_string):
+    a_file.write(a_string + "\n")
+
 
 #----------------------------------------------------------------------
 
-# Note: Using the term 'folder' instead of 'directory' in descriptions.
+# Note: Using the term 'folder' instead of 'directory' in argument 
+# descriptions.
 
 ap = argparse.ArgumentParser(
 	description =
@@ -307,12 +316,8 @@ ap.add_argument(
 
 args = ap.parse_args()
 
-#if not os.path.exists(args.dirpath):
-#	raise SystemExit('Path not found: ' + args.dirpath)
-
-print(f"optfile={args.optfile}")
-print(f"recurse={args.recurse}")
-
+#print(f"optfile={args.optfile}")
+#print(f"recurse={args.recurse}")
 
 dirs_to_scan = []
 for folder in args.folders:
@@ -366,6 +371,8 @@ with open(out_file_name, 'w') as f:
     writeln(f, '<div id="content">')
 
     writeln(f, '<h1>To-do Items</h1>')
+
+    #TODO: Write flagged items section.
 
     for todo_file in todo_files:
         if len(todo_file.todo_items) > 0:
