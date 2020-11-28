@@ -5,7 +5,7 @@
 #
 # 
 #
-# 2020-11-27
+# 2020-11-28
 #----------------------------------------------------------------------
 
 from pathlib import Path
@@ -24,9 +24,9 @@ TodoItem = namedtuple('TodoItem', 'is_flagged, is_elevated, item_text, source_fi
 TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 
 
-app_version = '20201127.1'
+app_version = '20201128.1'
 
-css_mode = 0
+css_mode = 2
 # 0 = link to external css file (use for trying css changes).
 # 1 = embed from external css file (use to get css to update embed_style).
 # 2 = embed from function embed_style.
@@ -122,13 +122,13 @@ def embed_style():
             max-width: 960px;
         }
         #footer {
-            border-top: 2px solid lightslategray;
+            border-top: 2px solid rosybrown;
             font-family: monospace;
             font-size: medium;
-            color: navy;
+            color: darkolivegreen;
         }
         .fileheader {
-            border: 1px solid rgb(95, 238, 238);
+            border: 1px solid rgb(95, 238, 238);    
             background-color: rgb(207, 240, 240);
             padding-left: 10px;
             border-radius: 12px;
@@ -141,7 +141,7 @@ def embed_style():
         .filetime {
             font-family: monospace;
             font-size: small;
-            color: darkslategrey;
+            color: darkslategrey;  
             margin-left: 5px;
         }
         .filecontent {
@@ -167,29 +167,31 @@ def embed_style():
         .flagged {
             font-weight: bold;
         }
-        /* .flagged_section {
-            border: 1px solid darkred;
-        } */
-        .flagged0, .flagged1 {
-            padding-left: 10px;
-            padding-top: 5px;
-            border-radius: 8px;
-            margin: 4px 0 8px;
+        .flagged_section {
+            border-top: 2px solid rosybrown;
+            border-bottom: 2px solid rosybrown;
+            margin-bottom: 30px;
         }
-        .flagged0 a, .flagged1 a {
+        .flagged_section a {
             font-family: monospace;
             font-size: large;
-        }
-        .flagged0 {
-            background-color: rgb(250, 237, 232);
-        }
-        .flagged1 {
-            background-color: rgb(250, 245, 232);
         }
         .flagged_items {
             margin-left: 20px;
             margin-right: 20px;
             margin-bottom: 25px;
+        }
+        .flag0, .flag1 {
+            padding-left: 10px;
+            padding-top: 5px;
+            border-radius: 8px;
+            margin: 4px 0 8px;
+        }
+        .flag0 {
+            background-color: rgb(250, 237, 232);
+        }
+        .flag1 {
+            background-color: rgb(250, 245, 232);
         }
         .toplink {
             font-size: x-small;
@@ -259,7 +261,7 @@ def as_link_name(file_name):
 
 
 def flagged_item_html(item, row):
-    s = "<div class=\"flagged{0}\">\n".format(row % 2)
+    s = "<div class=\"flag{0}\">\n".format(row % 2)
     s += "<p class=\"flink\"><a href=\"#{0}\">{1}</a></p>\n".format(
         as_link_name(item.source_file),
         item.source_file
@@ -360,11 +362,6 @@ def get_output_filename(given_filename):
         return str(p)
     else:
         return str(p.with_suffix('.html'))
-
-
-# Oh no, Pascal!
-def writeln(a_file, a_string):
-    a_file.write(a_string + "\n")
 
 
 #----------------------------------------------------------------------
@@ -468,27 +465,27 @@ out_file_name = get_output_filename(args.output_file)
 print("Writing file [{0}].".format(out_file_name))
 
 with open(out_file_name, 'w') as f:
-    writeln(f, html_head('ToDo Items'))
+    f.write(html_head('ToDo Items') + "\n")
 
-    writeln(f, '<div id="wrapper">')
-    writeln(f, '<div id="content">')
+    f.write('<div id="wrapper">' + "\n")
+    f.write('<div id="content">' + "\n")
 
-    writeln(f, '<h1><a name="top">To-do Items</a></h1>')
+    f.write('<h1><a name="top">To-do Items</a></h1>' + "\n")
 
-    writeln(f, flagged_items_section(todo_files))
+    f.write(flagged_items_section(todo_files) + "\n")
 
-    writeln(f, main_section(todo_files))
+    f.write(main_section(todo_files) + "\n")
 
-    writeln(f, '<div id="footer">')
-    writeln(f, 'Created {0} by todolister.py (version {1}).'.format(
+    f.write('<div id="footer">' + "\n")
+    f.write('Created {0} by todolister.py (version {1}).'.format(
         datetime.now().strftime('%Y-%m-%d %H:%M'),
         app_version
-    ))
-    writeln(f, '</div>')
-    writeln(f, '')
-    writeln(f, '</div>  <!--end content -->')
-    writeln(f, '</div>  <!--end wrapper -->')
-    writeln(f, html_tail())
+    ) + "\n")
+    f.write('</div>' + "\n")
+    f.write('' + "\n")
+    f.write('</div>  <!--end content -->' + "\n")
+    f.write('</div>  <!--end wrapper -->' + "\n")
+    f.write(html_tail())
 
 
 print("Done.")
