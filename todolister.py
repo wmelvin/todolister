@@ -41,7 +41,8 @@ default_file_specs = [
 
 css_file_name = Path.cwd() / "style.css"
 
-default_output_file = Path.cwd() / "todolister-output.html"
+#default_output_file = Path.cwd() / "todolister-output.html"
+default_output_file = Path.cwd() / "from-todolister.html"
 
 
 def matches_filespec(file_name):
@@ -359,9 +360,17 @@ def get_dirs_to_scan(default_dirs, opt_content):
 def get_output_filename(given_filename, desired_suffix):
     p = Path(given_filename).resolve()
     if p.suffix.lower() == desired_suffix:
-        return str(p)
+        s = str(p)
     else:
-        return str(p.with_suffix(desired_suffix))
+        s = str(p.with_suffix(desired_suffix))
+    
+    if matches_filespec(Path(s).name):
+        print("\nWARNING: Output file name matches a specification "
+            + "for files to be scanned. Its contents will be "
+            + "included in subsequent scans, causing duplication.")
+        print("   NAME: {0}\n".format(s))
+
+    return s
 
 
 def write_html_output(todo_files):
