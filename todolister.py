@@ -238,10 +238,8 @@ def todo_file_html(file_name, last_modified):
 
 def html_text(text):
     s = text.replace("&", "&amp;")
-    #s = s.replace(" ", "&nbsp;")
     s = s.replace("<", "&lt;")
     s = s.replace(">", "&gt;")
-    #s = s.replace("\n", "<br />\n")
     return s
 
 
@@ -281,6 +279,33 @@ def flagged_items_html(items):
         s += item
     s += "</div>  <!--end flagged_items -->\n"
     s += "</div>  <!--end flagged_section -->\n"
+    return s
+
+
+def flagged_items_section(todo_files):
+    flagged_items = []
+    row = 0
+    for todo_file in todo_files:
+        if len(todo_file.todo_items) > 0:
+            for item in todo_file.todo_items:
+                if item.is_flagged:
+                    row += 1
+                    flagged_items.append(flagged_item_html(item, row))
+    return flagged_items_html(flagged_items)
+
+
+def main_section(todo_files):
+    s = '<h2>Files with To-do Items</h2>' + "\n"
+    for todo_file in todo_files:
+        if len(todo_file.todo_items) > 0:
+            s += todo_file_html(todo_file.full_name, todo_file.last_modified)
+            s += '<div class="filecontent">' + "\n"
+            row = 0
+            for item in todo_file.todo_items:
+                row += 1
+                s += todo_item_html(item, row) + "\n"
+            s += '<p class="toplink">(<a href="#top">top</a>)</p>' + "\n"
+            s += '</div>  <!--end filecontent -->' + "\n\n"
     return s
 
 
@@ -434,7 +459,9 @@ todo_files = []
 for file_info in file_list:
     print("Reading file [{0}]".format(file_info.full_name))
     items = get_todo_items(file_info.full_name)
-    todo_files.append(TodoFile(file_info.last_modified, file_info.full_name, items))
+    todo_files.append(
+        TodoFile(file_info.last_modified, file_info.full_name, items)
+    )
 
 out_file_name = get_output_filename(args.output_file)
 
@@ -448,30 +475,9 @@ with open(out_file_name, 'w') as f:
 
     writeln(f, '<h1><a name="top">To-do Items</a></h1>')
 
-    # Write list of flagged items.
-    flagged_items = []
-    row = 0
-    for todo_file in todo_files:
-        if len(todo_file.todo_items) > 0:
-            for item in todo_file.todo_items:
-                if item.is_flagged:
-                    row += 1
-                    flagged_items.append(flagged_item_html(item, row))
-    writeln(f, flagged_items_html(flagged_items))
+    writeln(f, flagged_items_section(todo_files))
 
-    # Write main section listing files with to-do items.
-    writeln(f, '<h2>Files with To-do Items</h2>')
-    for todo_file in todo_files:
-        if len(todo_file.todo_items) > 0:
-            writeln(f, todo_file_html(todo_file.full_name, todo_file.last_modified))
-            writeln(f, '<div class="filecontent">')
-            row = 0
-            for item in todo_file.todo_items:
-                row += 1
-                writeln(f, todo_item_html(item, row))
-            writeln(f, '<p class="toplink">(<a href="#top">top</a>)</p>')
-            writeln(f, '</div>  <!--end filecontent -->')
-            writeln(f, '')
+    writeln(f, main_section(todo_files))
 
     writeln(f, '<div id="footer">')
     writeln(f, 'Created {0} by todolister.py (version {1}).'.format(
