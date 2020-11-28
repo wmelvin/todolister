@@ -41,7 +41,7 @@ default_file_specs = [
 
 css_file_name = Path.cwd() / "style.css"
 
-default_output_file = Path.cwd() / "todolist.html"
+default_output_file = Path.cwd() / "todolister-output.html"
 
 
 def matches_filespec(file_name):
@@ -356,12 +356,56 @@ def get_dirs_to_scan(default_dirs, opt_content):
         return dirs
 
 
-def get_output_filename(given_filename):
+def get_output_filename(given_filename, desired_suffix):
     p = Path(given_filename).resolve()
-    if p.suffix.lower() == '.html':
+    if p.suffix.lower() == desired_suffix:
         return str(p)
     else:
-        return str(p.with_suffix('.html'))
+        return str(p.with_suffix(desired_suffix))
+
+
+def write_html_output(todo_files):
+    out_file_name = get_output_filename(args.output_file, '.html')
+    print("Writing file [{0}].".format(out_file_name))
+    with open(out_file_name, 'w') as f:
+        f.write(html_head('ToDo Items') + "\n")
+        f.write('<div id="wrapper">' + "\n")
+        f.write('<div id="content">' + "\n")
+        f.write('<h1><a name="top">To-do Items</a></h1>' + "\n")
+        f.write(flagged_items_section(todo_files) + "\n")
+        f.write(main_section(todo_files) + "\n")
+        f.write('<div id="footer">' + "\n")
+        f.write('Created {0} by todolister.py (version {1}).'.format(
+            datetime.now().strftime('%Y-%m-%d %H:%M'),
+            app_version
+        ) + "\n")
+        f.write('</div>' + "\n\n")
+        f.write('</div>  <!--end content -->' + "\n")
+        f.write('</div>  <!--end wrapper -->' + "\n")
+        f.write(html_tail())
+
+
+def write_text_output(todo_files):
+    sep = '-' * 70
+    out_file_name = get_output_filename(args.output_file, '.txt')
+    print("Writing file [{0}].".format(out_file_name))
+    with open(out_file_name, 'w') as f:
+        f.write("Gathered ToDo Items\n")
+        for todo_file in todo_files:
+            if len(todo_file.todo_items) > 0:
+                s = sep + "\n"
+                s += todo_file.full_name  + "\n"
+                s += "  ({0})\n\n".format(todo_file.last_modified)
+                for item in todo_file.todo_items:
+                    s += item.item_text + "\n"
+                s += "\n"
+                f.write(s)
+        f.write(sep + "\n")
+        s = "Created {0} by todolister.py (version {1}).\n".format(
+            datetime.now().strftime('%Y-%m-%d %H:%M'),
+            app_version
+        )
+        f.write(s)
 
 
 #----------------------------------------------------------------------
@@ -407,6 +451,18 @@ ap.add_argument(
 	action = 'store',
 	help = "Name of output file. The '.html' extension will be "
         + "added if not specified." )
+
+ap.add_argument(
+	'-t', '--text-file',
+	dest = 'dotext',
+	action = 'store_true',
+	help = 'Create a text file output.')
+
+ap.add_argument(
+	'-n', '--no-html',
+	dest = 'nohtml',
+	action = 'store_true',
+	help = 'Do not create the HTML file output. Use with -t to only create a text file output.')
 
 args = ap.parse_args()
 
@@ -460,32 +516,11 @@ for file_info in file_list:
         TodoFile(file_info.last_modified, file_info.full_name, items)
     )
 
-out_file_name = get_output_filename(args.output_file)
+if not args.nohtml:
+    write_html_output(todo_files)
 
-print("Writing file [{0}].".format(out_file_name))
-
-with open(out_file_name, 'w') as f:
-    f.write(html_head('ToDo Items') + "\n")
-
-    f.write('<div id="wrapper">' + "\n")
-    f.write('<div id="content">' + "\n")
-
-    f.write('<h1><a name="top">To-do Items</a></h1>' + "\n")
-
-    f.write(flagged_items_section(todo_files) + "\n")
-
-    f.write(main_section(todo_files) + "\n")
-
-    f.write('<div id="footer">' + "\n")
-    f.write('Created {0} by todolister.py (version {1}).'.format(
-        datetime.now().strftime('%Y-%m-%d %H:%M'),
-        app_version
-    ) + "\n")
-    f.write('</div>' + "\n")
-    f.write('' + "\n")
-    f.write('</div>  <!--end content -->' + "\n")
-    f.write('</div>  <!--end wrapper -->' + "\n")
-    f.write(html_tail())
+if args.dotext:
+    write_text_output(todo_files)
 
 
 print("Done.")
