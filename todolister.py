@@ -5,7 +5,7 @@
 #
 # 
 #
-# 2020-11-28
+# 2020-12-03
 #----------------------------------------------------------------------
 
 from pathlib import Path
@@ -24,7 +24,7 @@ TodoItem = namedtuple('TodoItem', 'is_flagged, is_elevated, item_text, source_fi
 TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 
 
-app_version = '20201128.1'
+app_version = '20201203.1'
 
 css_mode = 2
 # 0 = link to external css file (use for trying css changes).
@@ -419,6 +419,37 @@ def write_text_output(todo_files):
 
 #----------------------------------------------------------------------
 
+def prune(text):
+    if text is None:
+        return ''
+    s = text.replace("\t", " ")
+    s = s.replace("\n", " ")
+    s = s.strip()
+    # Remove any repeating spaces.
+    while s.find("  ") >= 0:
+        s = s.replace("  ", " ")
+    return s
+
+
+def get_item_tags(todo_files):
+    tags = {}
+    for todo_file in todo_files:
+        if len(todo_file.todo_items) > 0:
+            for item in todo_file.todo_items:
+                s = prune(item.item_text)
+                # Split into words (which might not really be words).
+                wurdz = s.split(' ')
+                for wurd in wurdz:
+                    if wurd.startswith('#'):
+                        if wurd in tags.keys():
+                            tags[wurd].append(item)
+                        else:
+                            tags[wurd]=[item]
+    return tags
+
+
+#----------------------------------------------------------------------
+
 # Note: Using the term 'folder' instead of 'directory' in argument
 # descriptions.
 
@@ -524,6 +555,10 @@ for file_info in file_list:
     todo_files.append(
         TodoFile(file_info.last_modified, file_info.full_name, items)
     )
+
+item_tags = get_item_tags(todo_files)
+print(item_tags)
+#TODO: Use item_tags to write a new Tags section. Pass as 2nd arg to write_html_output?
 
 if not args.nohtml:
     write_html_output(todo_files)
