@@ -5,7 +5,7 @@
 #
 # 
 #
-# 2020-12-03
+# 2020-12-04
 #----------------------------------------------------------------------
 
 from pathlib import Path
@@ -24,7 +24,7 @@ TodoItem = namedtuple('TodoItem', 'is_flagged, is_elevated, item_text, source_fi
 TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 
 
-app_version = '20201203.1'
+app_version = '20201204.1'
 
 css_mode = 2
 # 0 = link to external css file (use for trying css changes).
@@ -297,6 +297,23 @@ def flagged_items_section(todo_files):
     return flagged_items_html(flagged_items)
 
 
+def tags_section(todo_tags):
+    s = "<div class=\"tags_section\">\n"
+    s += "<h2>Tagged Items</h2>\n"
+    s += "<div class=\"tagged_items\">\n"
+
+    #TODO: Divide and style the tags and items.
+    #
+    for tag, items in todo_tags.items():
+        s += "<p>{0}</p>\n".format(tag)
+        for item in items:
+            s += "<p>{0}</p>\n".format(item)
+
+    s += "</div>  <!--end flagged_items -->\n"
+    s += "</div>  <!--end flagged_section -->\n"
+    return s
+
+
 def main_section(todo_files):
     s = '<h2>Files with To-do Items</h2>' + "\n"
     for todo_file in todo_files:
@@ -373,22 +390,29 @@ def get_output_filename(given_filename, desired_suffix):
     return s
 
 
-def write_html_output(todo_files):
+def write_html_output(todo_files, todo_tags):
     out_file_name = get_output_filename(args.output_file, '.html')
     print("Writing file [{0}].".format(out_file_name))
     with open(out_file_name, 'w') as f:
         f.write(html_head('ToDo Items') + "\n")
         f.write('<div id="wrapper">' + "\n")
         f.write('<div id="content">' + "\n")
+        
         f.write('<h1><a name="top">To-do Items</a></h1>' + "\n")
+        
         f.write(flagged_items_section(todo_files) + "\n")
+
+        f.write(tags_section(todo_tags) + "\n")
+
         f.write(main_section(todo_files) + "\n")
+
         f.write('<div id="footer">' + "\n")
         f.write('Created {0} by todolister.py (version {1}).'.format(
             datetime.now().strftime('%Y-%m-%d %H:%M'),
             app_version
         ) + "\n")
         f.write('</div>' + "\n\n")
+
         f.write('</div>  <!--end content -->' + "\n")
         f.write('</div>  <!--end wrapper -->' + "\n")
         f.write(html_tail())
@@ -557,11 +581,9 @@ for file_info in file_list:
     )
 
 item_tags = get_item_tags(todo_files)
-print(item_tags)
-#TODO: Use item_tags to write a new Tags section. Pass as 2nd arg to write_html_output?
 
 if not args.nohtml:
-    write_html_output(todo_files)
+    write_html_output(todo_files, item_tags)
 
 if args.dotext:
     write_text_output(todo_files)
