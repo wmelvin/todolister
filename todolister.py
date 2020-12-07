@@ -5,7 +5,7 @@
 #
 # 
 #
-# 2020-12-04
+# 2020-12-07
 #----------------------------------------------------------------------
 
 from pathlib import Path
@@ -24,9 +24,9 @@ TodoItem = namedtuple('TodoItem', 'is_flagged, is_elevated, item_text, source_fi
 TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 
 
-app_version = '20201204.1'
+app_version = '20201207.1'
 
-css_mode = 2
+css_mode = 0
 # 0 = link to external css file (use for trying css changes).
 # 1 = embed from external css file (use to get css to update embed_style).
 # 2 = embed from function embed_style.
@@ -297,20 +297,35 @@ def flagged_items_section(todo_files):
     return flagged_items_html(flagged_items)
 
 
+def tagged_item_html(item, row):
+    s = '<div class="tag{0}">{1}'.format(row % 2, "\n")
+    s += '<p class="flink"><a href="#{0}">{1}</a></p>{2}'.format(
+        as_link_name(item.source_file),
+        item.source_file,
+        "\n"
+    )
+    s += "<pre>\n{0}\n</pre>\n".format(html_text(item.item_text))
+    s += "</div>\n"
+    return s
+
+
 def tags_section(todo_tags):
-    s = "<div class=\"tags_section\">\n"
-    s += "<h2>Tagged Items</h2>\n"
-    s += "<div class=\"tagged_items\">\n"
+    s = '<div class="tags_section">' + "\n"
+    s += '<h2>Tagged Items</h2>' + "\n"
+    s += '<div class="tagged_items">' + "\n"
 
-    #TODO: Divide and style the tags and items.
-    #
     for tag, items in todo_tags.items():
-        s += "<p>{0}</p>\n".format(tag)
+        s += '<div class="tagheader">' + "\n"
+        s += '<p>Tag: <strong>{0}</strong></p>{1}'.format(tag, "\n")
+        s += '</div>' + "\n"
+        row = 0
         for item in items:
-            s += "<p>{0}</p>\n".format(item)
+            row += 1
+            s += tagged_item_html(item, row)
+        s += '</div>' + "\n"
 
-    s += "</div>  <!--end flagged_items -->\n"
-    s += "</div>  <!--end flagged_section -->\n"
+    s += '</div>  <!--end tagged_items -->' + "\n"
+    s += '</div>  <!--end tags_section -->' + "\n"
     return s
 
 

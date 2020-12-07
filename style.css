@@ -63,31 +63,15 @@ pre {
     font-weight: bold;
 }
 
-.flagged_section {
+.flagged_section, .tags_section {
     border-top: 2px solid rosybrown;
-    border-bottom: 2px solid rosybrown;
+    /* border-bottom: 2px solid rosybrown; */
     margin-bottom: 30px;
 }
 
-
-.flagged0, .flagged1 {
-    padding-left: 10px;
-    padding-top: 5px;
-    border-radius: 8px;
-    margin: 4px 0 8px;
-}
-
-.flagged0 a, .flagged1 a {
+.flagged_section a, .tags_section a {
     font-family: monospace;
     font-size: large;
-}
-
-.flagged0 {
-    background-color: rgb(250, 237, 232);
-}
-
-.flagged1 {
-    background-color: rgb(250, 245, 232);
 }
 
 .flagged_items {
@@ -95,6 +79,31 @@ pre {
     margin-right: 20px;
     margin-bottom: 25px;
 }
+.flag0, .flag1, .tag0, .tag1 {
+    padding-left: 10px;
+    padding-top: 5px;
+    border-radius: 8px;
+    margin: 4px 0 8px;
+}
+
+.flag0, .tag0 {
+    background-color: rgb(250, 237, 232);
+}
+
+.flag1, .tag1 {
+    background-color: rgb(250, 245, 232);
+}
+
+.tagheader {
+    border: 1px solid rgb(95, 238, 238);    
+    background-color: rgb(207, 240, 240);
+    padding-left: 10px;
+    border-radius: 12px;
+}
+
+/* .hashtag {
+    font-size: x-large;
+} */
 
 .toplink {
     font-size: x-small;
