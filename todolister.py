@@ -5,7 +5,7 @@
 #
 # 
 #
-# 2020-12-07
+# 2020-12-08
 #----------------------------------------------------------------------
 
 from pathlib import Path
@@ -24,7 +24,7 @@ TodoItem = namedtuple('TodoItem', 'is_flagged, is_elevated, item_text, source_fi
 TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 
 
-app_version = '20201207.1'
+app_version = '20201208.2'
 
 css_mode = 2
 # 0 = link to external css file (use for trying css changes).
@@ -41,7 +41,6 @@ default_file_specs = [
 
 css_file_name = Path.cwd() / "style.css"
 
-#default_output_file = Path.cwd() / "todolister-output.html"
 default_output_file = Path.cwd() / "from-todolister.html"
 
 
@@ -99,6 +98,9 @@ def get_todo_items(file_name):
 
     return todo_items
 
+
+#----------------------------------------------------------------------
+# CSS styling in output:
 
 def get_css_from_file(indent_len):
     css = ''
@@ -207,6 +209,8 @@ def embed_style():
         }
     </style>''' + "\n"
 
+
+#----------------------------------------------------------------------
 
 def html_head(title):
     s = "<!DOCTYPE html>\n"
@@ -320,18 +324,6 @@ def flagged_items_html(items):
     return s
 
 
-# def flagged_items_section(todo_files):
-#     flagged_items = []
-#     row = 0
-#     for todo_file in todo_files:
-#         if len(todo_file.todo_items) > 0:
-#             for item in todo_file.todo_items:
-#                 if item.is_flagged:
-#                     row += 1
-#                     flagged_items.append(flagged_item_html(item, row))
-#     return flagged_items_html(flagged_items)
-
-
 def get_flagged_items(todo_files):
     flagged_items = []
     row = 0
@@ -361,7 +353,7 @@ def tags_section(todo_tags):
     s += '<h2><a name="TaggedItems">Tagged Items</a></h2>' + "\n"
     s += '<div id="tagged_items">' + "\n"
 
-    for tag, items in todo_tags.items():
+    for tag, items in sorted(todo_tags.items()):
         s += '<div class="tagheader">' + "\n"
         s += '<p>Tag: <strong>{0}</strong></p>{1}'.format(tag, "\n")
         s += '</div>' + "\n"
@@ -472,7 +464,6 @@ def write_html_output(todo_files, flagged_items, todo_tags):
             ) + "\n"
         )
 
-        # f.write(flagged_items_section(todo_files) + "\n")
         f.write(flagged_items_html(flagged_items) + "\n")
 
         f.write(tags_section(todo_tags) + "\n")
@@ -521,6 +512,10 @@ def prune(text):
         return ''
     s = text.replace("\t", " ")
     s = s.replace("\n", " ")
+    s = s.replace(",", " ")
+    s = s.replace(".", " ")
+    s = s.replace("(", " ")
+    s = s.replace(")", " ")
     s = s.strip()
     # Remove any repeating spaces.
     while s.find("  ") >= 0:
@@ -537,7 +532,7 @@ def get_item_tags(todo_files):
                 # Split into words (which might not really be words).
                 wurdz = s.split(' ')
                 for wurd in wurdz:
-                    if wurd.startswith('#'):
+                    if len(wurd) > 1 and wurd.startswith('#'):
                         if wurd in tags.keys():
                             tags[wurd].append(item)
                         else:
@@ -602,9 +597,6 @@ ap.add_argument(
 	help = 'Do not create the HTML file output. Use with -t to only create a text file output.')
 
 args = ap.parse_args()
-
-#print(f"optfile={args.optfile}")
-#print(f"recurse={args.recurse}")
 
 dirs_to_scan = []
 for folder in args.folders:
