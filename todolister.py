@@ -261,6 +261,30 @@ def as_link_name(file_name):
     return file_name.strip(' /\\').replace(' ','_').replace('/','-').replace('.','-')
 
 
+def contents_section(todo_files):
+    s = '<div id="contents_section">' + "\n"
+    s += '<h2>Contents</h2>' + "\n"
+    
+    s += '<h3>Sections</h2>' + "\n"
+    s += '<ul>' + "\n"
+    s += '<li><a href="#FlaggedItems">Flagged Items</a></li>' + "\n"
+    s += '<li><a href="#TaggedItems">Tags</a></li>' + "\n"
+    s += '</ul>' + "\n"
+
+    s += '<h3>Files</h2>' + "\n"
+    s += '<ul>' + "\n"
+    for todo_file in todo_files:
+        if len(todo_file.todo_items) > 0:
+            s += '<li class="flink"><a href="#{0}">{1}</a></li>{2}'.format(
+                as_link_name(todo_file.full_name),
+                todo_file.full_name,
+                "\n"
+            )
+    s += '</ul>' + "\n"
+    s += '</div>  <!--end contents_section -->' + "\n"
+    return s
+
+
 def flagged_item_html(item, row):
     s = "<div class=\"flag{0}\">\n".format(row % 2)
     s += "<p class=\"flink\"><a href=\"#{0}\">{1}</a></p>\n".format(
@@ -275,13 +299,13 @@ def flagged_item_html(item, row):
 def flagged_items_html(items):
     if len(items) == 0:
         return ''
-    s = "<div class=\"flagged_section\">\n"
-    s += "<h2>Flagged Items</h2>\n"
-    s += "<div class=\"flagged_items\">\n"
+    s = '<div id="flagged_section">' + "\n"
+    s += '<h2><a name="FlaggedItems">Flagged Items</a></h2>' + "\n"
+    s += '<div id="flagged_items">' + "\n"
     for item in items:
         s += item
-    s += "</div>  <!--end flagged_items -->\n"
-    s += "</div>  <!--end flagged_section -->\n"
+    s += '</div>  <!--end flagged_items -->' + "\n"
+    s += '</div>  <!--end flagged_section -->' + "\n"
     return s
 
 
@@ -310,9 +334,9 @@ def tagged_item_html(item, row):
 
 
 def tags_section(todo_tags):
-    s = '<div class="tags_section">' + "\n"
-    s += '<h2>Tagged Items</h2>' + "\n"
-    s += '<div class="tagged_items">' + "\n"
+    s = '<div id="tags_section">' + "\n"
+    s += '<h2><a name="TaggedItems">Tagged Items</a></h2>' + "\n"
+    s += '<div id="tagged_items">' + "\n"
 
     for tag, items in todo_tags.items():
         s += '<div class="tagheader">' + "\n"
@@ -330,7 +354,8 @@ def tags_section(todo_tags):
 
 
 def main_section(todo_files):
-    s = '<h2>Files with To-do Items</h2>' + "\n"
+    s = '<div id="main">' + "\n"
+    s += '<h2>Files with To-do Items</h2>' + "\n"
     for todo_file in todo_files:
         if len(todo_file.todo_items) > 0:
             s += todo_file_html(todo_file.full_name, todo_file.last_modified)
@@ -341,6 +366,7 @@ def main_section(todo_files):
                 s += todo_item_html(item, row) + "\n"
             s += '<p class="toplink">(<a href="#top">top</a>)</p>' + "\n"
             s += '</div>  <!--end filecontent -->' + "\n\n"
+    s += '</div>  <!--end main -->' + "\n"
     return s
 
 
@@ -415,6 +441,8 @@ def write_html_output(todo_files, todo_tags):
         
         f.write('<h1><a name="top">To-do Items</a></h1>' + "\n")
         
+        f.write(contents_section(todo_files) + "\n")
+
         f.write(flagged_items_section(todo_files) + "\n")
 
         f.write(tags_section(todo_tags) + "\n")
