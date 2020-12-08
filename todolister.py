@@ -26,7 +26,7 @@ TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 
 app_version = '20201207.1'
 
-css_mode = 0
+css_mode = 2
 # 0 = link to external css file (use for trying css changes).
 # 1 = embed from external css file (use to get css to update embed_style).
 # 2 = embed from function embed_style.
@@ -128,6 +128,9 @@ def embed_style():
             font-size: medium;
             color: darkolivegreen;
         }
+        #main {
+            border-top: 2px solid rosybrown;
+        }
         .fileheader {
             border: 1px solid rgb(95, 238, 238);    
             background-color: rgb(207, 240, 240);
@@ -168,12 +171,11 @@ def embed_style():
         .flagged {
             font-weight: bold;
         }
-        .flagged_section {
+        #flagged_section, #tags_section, #contents_section {
             border-top: 2px solid rosybrown;
-            border-bottom: 2px solid rosybrown;
             margin-bottom: 30px;
         }
-        .flagged_section a {
+        #flagged_items a, #tagged_items a, #contents_section a {
             font-family: monospace;
             font-size: large;
         }
@@ -182,17 +184,23 @@ def embed_style():
             margin-right: 20px;
             margin-bottom: 25px;
         }
-        .flag0, .flag1 {
+        .flag0, .flag1, .tag0, .tag1 {
             padding-left: 10px;
             padding-top: 5px;
             border-radius: 8px;
             margin: 4px 0 8px;
         }
-        .flag0 {
+        .flag0, .tag0 {
             background-color: rgb(250, 237, 232);
         }
-        .flag1 {
+        .flag1, .tag1 {
             background-color: rgb(250, 245, 232);
+        }
+        .tagheader {
+            border: 1px solid rgb(95, 238, 238);    
+            background-color: rgb(207, 240, 240);
+            padding-left: 10px;
+            border-radius: 12px;
         }
         .toplink {
             font-size: x-small;
@@ -261,14 +269,17 @@ def as_link_name(file_name):
     return file_name.strip(' /\\').replace(' ','_').replace('/','-').replace('.','-')
 
 
-def contents_section(todo_files):
+def contents_section(todo_files, any_flags, any_tags):
     s = '<div id="contents_section">' + "\n"
     s += '<h2>Contents</h2>' + "\n"
     
     s += '<h3>Sections</h2>' + "\n"
     s += '<ul>' + "\n"
-    s += '<li><a href="#FlaggedItems">Flagged Items</a></li>' + "\n"
-    s += '<li><a href="#TaggedItems">Tags</a></li>' + "\n"
+    if any_flags:
+        s += '<li><a href="#FlaggedItems">Flagged Items</a></li>' + "\n"
+    if any_tags:
+        s += '<li><a href="#TaggedItems">Tagged Items</a></li>' + "\n"
+    s += '<li><a href="#Main">Files with To-do Items</a></li>' + "\n"    
     s += '</ul>' + "\n"
 
     s += '<h3>Files</h2>' + "\n"
@@ -309,7 +320,19 @@ def flagged_items_html(items):
     return s
 
 
-def flagged_items_section(todo_files):
+# def flagged_items_section(todo_files):
+#     flagged_items = []
+#     row = 0
+#     for todo_file in todo_files:
+#         if len(todo_file.todo_items) > 0:
+#             for item in todo_file.todo_items:
+#                 if item.is_flagged:
+#                     row += 1
+#                     flagged_items.append(flagged_item_html(item, row))
+#     return flagged_items_html(flagged_items)
+
+
+def get_flagged_items(todo_files):
     flagged_items = []
     row = 0
     for todo_file in todo_files:
@@ -318,7 +341,7 @@ def flagged_items_section(todo_files):
                 if item.is_flagged:
                     row += 1
                     flagged_items.append(flagged_item_html(item, row))
-    return flagged_items_html(flagged_items)
+    return flagged_items
 
 
 def tagged_item_html(item, row):
@@ -355,7 +378,7 @@ def tags_section(todo_tags):
 
 def main_section(todo_files):
     s = '<div id="main">' + "\n"
-    s += '<h2>Files with To-do Items</h2>' + "\n"
+    s += '<h2><a name="Main">Files with To-do Items</a></h2>' + "\n"
     for todo_file in todo_files:
         if len(todo_file.todo_items) > 0:
             s += todo_file_html(todo_file.full_name, todo_file.last_modified)
@@ -431,7 +454,7 @@ def get_output_filename(given_filename, desired_suffix):
     return s
 
 
-def write_html_output(todo_files, todo_tags):
+def write_html_output(todo_files, flagged_items, todo_tags):
     out_file_name = get_output_filename(args.output_file, '.html')
     print("Writing file [{0}].".format(out_file_name))
     with open(out_file_name, 'w') as f:
@@ -441,9 +464,16 @@ def write_html_output(todo_files, todo_tags):
         
         f.write('<h1><a name="top">To-do Items</a></h1>' + "\n")
         
-        f.write(contents_section(todo_files) + "\n")
+        f.write(
+            contents_section(
+                todo_files, 
+                (len(flagged_items) > 0), 
+                (len(todo_tags) > 0)
+            ) + "\n"
+        )
 
-        f.write(flagged_items_section(todo_files) + "\n")
+        # f.write(flagged_items_section(todo_files) + "\n")
+        f.write(flagged_items_html(flagged_items) + "\n")
 
         f.write(tags_section(todo_tags) + "\n")
 
@@ -623,10 +653,12 @@ for file_info in file_list:
         TodoFile(file_info.last_modified, file_info.full_name, items)
     )
 
+flagged_items = get_flagged_items(todo_files)
+
 item_tags = get_item_tags(todo_files)
 
 if not args.nohtml:
-    write_html_output(todo_files, item_tags)
+    write_html_output(todo_files, flagged_items, item_tags)
 
 if args.dotext:
     write_text_output(todo_files)

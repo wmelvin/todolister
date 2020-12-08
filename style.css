@@ -14,6 +14,10 @@
     color: darkolivegreen;
 }
     
+#main {
+    border-top: 2px solid rosybrown;
+}
+
 .fileheader {
     border: 1px solid rgb(95, 238, 238);    
     background-color: rgb(207, 240, 240);
@@ -63,13 +67,12 @@ pre {
     font-weight: bold;
 }
 
-.flagged_section, .tags_section {
+#flagged_section, #tags_section, #contents_section {
     border-top: 2px solid rosybrown;
-    /* border-bottom: 2px solid rosybrown; */
     margin-bottom: 30px;
 }
 
-.flagged_section a, .tags_section a {
+#flagged_items a, #tagged_items a, #contents_section a {
     font-family: monospace;
     font-size: large;
 }
@@ -100,10 +103,6 @@ pre {
     padding-left: 10px;
     border-radius: 12px;
 }
-
-/* .hashtag {
-    font-size: x-large;
-} */
 
 .toplink {
     font-size: x-small;
