@@ -5,7 +5,7 @@
 #
 # 
 #
-# 2020-12-08
+# 2020-12-11
 #----------------------------------------------------------------------
 
 from pathlib import Path
@@ -24,7 +24,7 @@ TodoItem = namedtuple('TodoItem', 'is_flagged, is_elevated, item_text, source_fi
 TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 
 
-app_version = '20201208.2'
+app_version = '20201211.1'
 
 css_mode = 2
 # 0 = link to external css file (use for trying css changes).
@@ -51,8 +51,17 @@ def matches_filespec(file_name):
     return False
 
 
+def exclude_dir(dir_name):
+    #return dir_name == Path(args.exclude_path).resolve()
+    return dir_name == args.exclude_path
+#TODO: Is simple string match good enough?
+
+
 def get_matching_files(dir_name, do_recurse):
     p = Path(dir_name).resolve()
+
+    if exclude_dir(str(p)):
+        return
 
     for f in [x for x in p.iterdir() if x.is_file()]:
         if matches_filespec(f.name):
@@ -450,7 +459,7 @@ def write_html_output(todo_files, flagged_items, todo_tags):
     out_file_name = get_output_filename(args.output_file, '.html')
     print("Writing file [{0}].".format(out_file_name))
     with open(out_file_name, 'w') as f:
-        f.write(html_head('ToDo Items') + "\n")
+        f.write(html_head(args.page_title) + "\n")
         f.write('<div id="wrapper">' + "\n")
         f.write('<div id="content">' + "\n")
         
@@ -596,7 +605,27 @@ ap.add_argument(
 	action = 'store_true',
 	help = 'Do not create the HTML file output. Use with -t to only create a text file output.')
 
+ap.add_argument(
+	'-x', '--exclude-path',
+	dest = 'exclude_path',
+    default = '',
+	action = 'store',
+	help = 'Path to exclude from scan.')
+#TODO: Perhaps expand on the help message.
+
+ap.add_argument(
+	'-p', '--page-title',
+	dest = 'page_title',
+    default = 'ToDo Items',
+	action = 'store',
+	help = 'Title for HTML page (will show in browser tab).')
+
+
+
 args = ap.parse_args()
+
+if len(args.exclude_path) > 0:
+    args.exclude_path = str(Path(args.exclude_path).resolve())
 
 dirs_to_scan = []
 for folder in args.folders:
