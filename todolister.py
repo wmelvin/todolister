@@ -5,14 +5,14 @@
 #
 # 
 #
-# 2020-12-11
+# 2020-12-19
 #----------------------------------------------------------------------
 
-from pathlib import Path
+import argparse
+import re
 from collections import namedtuple
 from datetime import datetime
-import re
-import argparse
+from pathlib import Path
 
 
 ScanProps = namedtuple('ScanProps', 'dir_name, do_recurse')
@@ -23,8 +23,11 @@ TodoItem = namedtuple('TodoItem', 'is_flagged, is_elevated, item_text, source_fi
 
 TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 
+#TODO: Use this instead of referencing args (argparse) object?
+# AppArgs = namedtuple('AppArgs', 'folders, optfile, recurse, mtime, '
+#     + 'output_file, dotext, nohtml, exclude_path, page_title')
 
-app_version = '20201211.1'
+app_version = '20201219.1'
 
 css_mode = 2
 # 0 = link to external css file (use for trying css changes).
@@ -109,7 +112,7 @@ def get_todo_items(file_name):
 
 
 #----------------------------------------------------------------------
-# CSS styling in output:
+#  region -- CSS styling in output:
 
 def get_css_from_file(indent_len):
     css = ''
@@ -218,6 +221,7 @@ def embed_style():
         }
     </style>''' + "\n"
 
+#  endregion
 
 #----------------------------------------------------------------------
 
@@ -551,138 +555,147 @@ def get_item_tags(todo_files):
 
 #----------------------------------------------------------------------
 
-# Note: Using the term 'folder' instead of 'directory' in argument
-# descriptions.
+def main():
 
-ap = argparse.ArgumentParser(
-	description =
-	'Read text files containing to-do markers and create a HTML report.')
+    #  region -- define arguments
 
-ap.add_argument(
-	'folders',
-    nargs = '*',
-    default = [str(Path.cwd())],
-	action = 'store',
-	help = 'Folder(s) to scan. Multiple folders can be specified.')
+    #  Note: Using the term 'folder' instead of 'directory' in argument
+    #  descriptions.
 
-ap.add_argument(
-	'-f', '--options-file',
-	dest = 'optfile',
-	action = 'store',
-	help = 'Name of options file.')
+    ap = argparse.ArgumentParser(
+        description =
+        'Read text files containing to-do markers and create a HTML report.')
 
-ap.add_argument(
-	'-r', '--recurse',
-	dest = 'recurse',
-	action = 'store_true',
-	help = 'Recurse sub-folders. Applies to all folders specified. '
-        + 'Use an options file to specify the recurse option for '
-        + 'individual folders.')
+    ap.add_argument(
+        'folders',
+        nargs = '*',
+        default = [str(Path.cwd())],
+        action = 'store',
+        help = 'Folder(s) to scan. Multiple folders can be specified.')
 
-ap.add_argument(
-	'-m', '--mtime-desc',
-	dest = 'mtime',
-	action = 'store_true',
-	help = 'Sort files by last-modified time in descending order.')
+    ap.add_argument(
+        '-f', '--options-file',
+        dest = 'optfile',
+        action = 'store',
+        help = 'Name of options file.')
 
-ap.add_argument(
-	'-o', '--output-file',
-	dest = 'output_file',
-    default = default_output_file,
-	action = 'store',
-	help = "Name of output file. The '.html' extension will be "
-        + "added if not specified." )
+    ap.add_argument(
+        '-r', '--recurse',
+        dest = 'recurse',
+        action = 'store_true',
+        help = 'Recurse sub-folders. Applies to all folders specified. '
+            + 'Use an options file to specify the recurse option for '
+            + 'individual folders.')
 
-ap.add_argument(
-	'-t', '--text-file',
-	dest = 'dotext',
-	action = 'store_true',
-	help = 'Create a text file output.')
+    ap.add_argument(
+        '-m', '--mtime-desc',
+        dest = 'mtime',
+        action = 'store_true',
+        help = 'Sort files by last-modified time in descending order.')
 
-ap.add_argument(
-	'-n', '--no-html',
-	dest = 'nohtml',
-	action = 'store_true',
-	help = 'Do not create the HTML file output. Use with -t to only create a text file output.')
+    ap.add_argument(
+        '-o', '--output-file',
+        dest = 'output_file',
+        default = default_output_file,
+        action = 'store',
+        help = "Name of output file. The '.html' extension will be "
+            + "added if not specified." )
 
-ap.add_argument(
-	'-x', '--exclude-path',
-	dest = 'exclude_path',
-    default = '',
-	action = 'store',
-	help = 'Path to exclude from scan.')
-#TODO: Perhaps expand on the help message.
+    ap.add_argument(
+        '-t', '--text-file',
+        dest = 'dotext',
+        action = 'store_true',
+        help = 'Create a text file output.')
 
-ap.add_argument(
-	'-p', '--page-title',
-	dest = 'page_title',
-    default = 'ToDo Items',
-	action = 'store',
-	help = 'Title for HTML page (will show in browser tab).')
+    ap.add_argument(
+        '-n', '--no-html',
+        dest = 'nohtml',
+        action = 'store_true',
+        help = 'Do not create the HTML file output. Use with -t to only create a text file output.')
 
+    ap.add_argument(
+        '-x', '--exclude-path',
+        dest = 'exclude_path',
+        default = '',
+        action = 'store',
+        help = 'Path to exclude from scan.')
+    #TODO: Perhaps expand on the help message.
 
+    ap.add_argument(
+        '-p', '--page-title',
+        dest = 'page_title',
+        default = 'ToDo Items',
+        action = 'store',
+        help = 'Title for HTML page (will show in browser tab).')
 
-args = ap.parse_args()
+    #  endregion
 
-if len(args.exclude_path) > 0:
-    args.exclude_path = str(Path(args.exclude_path).resolve())
+    global args
+    args = ap.parse_args()
 
-dirs_to_scan = []
-for folder in args.folders:
-    folder = str(Path(folder).resolve())
-    print(f"Folder {folder}")
-    if not Path(folder).exists():
-    	raise SystemExit('Path not found: ' + folder)
-    dirs_to_scan.append(ScanProps(folder, args.recurse))
+    if len(args.exclude_path) > 0:
+        args.exclude_path = str(Path(args.exclude_path).resolve())
 
-if args.optfile is None:
-    file_specs = default_file_specs
-else:
-    p = Path(args.optfile).resolve()
-    if not p.exists():
-    	raise SystemExit(f"Options file not found: {p}")
-    with open(p, 'r') as f:
-        opt_lines = f.readlines()
-    file_specs = get_file_specs(default_file_specs, opt_lines)
-    dirs_to_scan = get_dirs_to_scan(dirs_to_scan, opt_lines)
+    dirs_to_scan = []
+    for folder in args.folders:
+        folder = str(Path(folder).resolve())
+        print(f"Folder {folder}")
+        if not Path(folder).exists():
+            raise SystemExit('Path not found: ' + folder)
+        dirs_to_scan.append(ScanProps(folder, args.recurse))
 
+    global file_specs
+    if args.optfile is None:
+        file_specs = default_file_specs
+    else:
+        p = Path(args.optfile).resolve()
+        if not p.exists():
+            raise SystemExit(f"Options file not found: {p}")
+        with open(p, 'r') as f:
+            opt_lines = f.readlines()
+        file_specs = get_file_specs(default_file_specs, opt_lines)
+        dirs_to_scan = get_dirs_to_scan(dirs_to_scan, opt_lines)
 
-# raise SystemExit('STOPPED')
-
-
-#----------------------------------------------------------------------
-
-file_list = []
-
-for dir in dirs_to_scan:
-    print(f"Scanning folder [{dir.dir_name}]")
-    get_matching_files(dir.dir_name, dir.do_recurse)
-
-if args.mtime:
-    # The last_modified field is the default for sort.
-    file_list.sort()
-    file_list.reverse()
-else:
-    file_list.sort(key=lambda item: item.full_name.lower())
-
-todo_files = []
-
-for file_info in file_list:
-    print("Reading file [{0}]".format(file_info.full_name))
-    items = get_todo_items(file_info.full_name)
-    todo_files.append(
-        TodoFile(file_info.last_modified, file_info.full_name, items)
-    )
-
-flagged_items = get_flagged_items(todo_files)
-
-item_tags = get_item_tags(todo_files)
-
-if not args.nohtml:
-    write_html_output(todo_files, flagged_items, item_tags)
-
-if args.dotext:
-    write_text_output(todo_files)
+    # raise SystemExit('STOPPED')
 
 
-print("Done.")
+    #----------------------------------------------------------------------
+    global file_list
+    file_list = []
+
+    for dir in dirs_to_scan:
+        print(f"Scanning folder [{dir.dir_name}]")
+        get_matching_files(dir.dir_name, dir.do_recurse)
+
+    if args.mtime:
+        # The last_modified field is the default for sort.
+        file_list.sort()
+        file_list.reverse()
+    else:
+        file_list.sort(key=lambda item: item.full_name.lower())
+
+    todo_files = []
+
+    for file_info in file_list:
+        print("Reading file [{0}]".format(file_info.full_name))
+        items = get_todo_items(file_info.full_name)
+        todo_files.append(
+            TodoFile(file_info.last_modified, file_info.full_name, items)
+        )
+
+    flagged_items = get_flagged_items(todo_files)
+
+    item_tags = get_item_tags(todo_files)
+
+    if not args.nohtml:
+        write_html_output(todo_files, flagged_items, item_tags)
+
+    if args.dotext:
+        write_text_output(todo_files)
+
+
+    print("Done (todolister.py).")
+
+
+if __name__ == "__main__":
+    main()
