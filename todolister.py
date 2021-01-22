@@ -5,7 +5,7 @@
 #
 # 
 #
-# 2020-12-19
+# 2021-01-22
 #----------------------------------------------------------------------
 
 import argparse
@@ -27,7 +27,7 @@ TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 # AppArgs = namedtuple('AppArgs', 'folders, optfile, recurse, mtime, '
 #     + 'output_file, dotext, nohtml, exclude_path, page_title')
 
-app_version = '20201219.1'
+app_version = '20210122.1'
 
 css_mode = 2
 # 0 = link to external css file (use for trying css changes).
@@ -39,7 +39,8 @@ default_file_specs = [
     '^notes.*.txt$',
     '.*notes.txt$',
     '^todo.*.txt$',
-    '.*-todo.txt$'
+    '.*-todo.txt$',
+    '^Context-.*.txt$'
 ]
 
 css_file_name = Path.cwd() / "style.css"
@@ -556,6 +557,8 @@ def get_item_tags(todo_files):
 #----------------------------------------------------------------------
 
 def main():
+
+    print('(todolister.py version {0})'.format(app_version))
 
     #  region -- define arguments
 
