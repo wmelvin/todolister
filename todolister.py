@@ -5,7 +5,7 @@
 #
 # 
 #
-# 2021-01-22
+# 2021-05-12
 #----------------------------------------------------------------------
 
 import argparse
@@ -23,11 +23,11 @@ TodoItem = namedtuple('TodoItem', 'is_flagged, is_elevated, item_text, source_fi
 
 TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 
-#TODO: Use this instead of referencing args (argparse) object?
-# AppArgs = namedtuple('AppArgs', 'folders, optfile, recurse, mtime, '
-#     + 'output_file, dotext, nohtml, exclude_path, page_title')
+AppArgs = namedtuple('AppArgs', 'folders, optfile, recurse, mtime, output_file, '
+    + 'dotext, nohtml, exclude_path, page_title'
+)
 
-app_version = '20210122.1'
+app_version = '20210512.1'
 
 css_mode = 2
 # 0 = link to external css file (use for trying css changes).
@@ -634,10 +634,25 @@ def main():
     #  endregion
 
     global args
-    args = ap.parse_args()
+    
+    args_parsed = ap.parse_args()
 
-    if len(args.exclude_path) > 0:
-        args.exclude_path = str(Path(args.exclude_path).resolve())
+    if len(args_parsed.exclude_path) > 0:
+        args_parsed.exclude_path = str(Path(args_parsed.exclude_path).resolve())
+
+    #  Put application arguments into a named tuple so they are immutable
+    #  from this point.
+    args = AppArgs(
+        args_parsed.folders, 
+        args_parsed.optfile, 
+        args_parsed.recurse, 
+        args_parsed.mtime, 
+        args_parsed.output_file, 
+        args_parsed.dotext, 
+        args_parsed.nohtml, 
+        args_parsed.exclude_path, 
+        args_parsed.page_title
+        )
 
     dirs_to_scan = []
     for folder in args.folders:
