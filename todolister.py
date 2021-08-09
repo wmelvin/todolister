@@ -27,13 +27,14 @@ AppArgs = namedtuple('AppArgs', 'folders, optfile, recurse, mtime, output_file, 
     + 'dotext, nohtml, exclude_path, page_title'
 )
 
-app_version = '20210512.1'
+app_version = '20210809.1'
 
 css_mode = 2
 # 0 = link to external css file (use for trying css changes).
 # 1 = embed from external css file (use to get css to update embed_style).
 # 2 = embed from function embed_style.
 
+debug_stop_after_args = False
 
 default_file_specs = [
     '^notes.*.txt$',
@@ -43,9 +44,9 @@ default_file_specs = [
     '^Context-.*.txt$'
 ]
 
-css_file_name = Path.cwd() / "style.css"
+css_file_name = str(Path.cwd() / "style.css")
 
-default_output_file = Path.cwd() / "from-todolister.html"
+default_output_file = str(Path.cwd() / "from-todolister.html")
 
 
 def matches_filespec(file_name):
@@ -418,8 +419,24 @@ def get_option_entries(opt_section, opt_content):
                 in_section = True
     return result
 
+def get_option_value(opt_section, opt_name, opt_content):
+    opts = get_option_entries(opt_section, opt_content)
+    for opt in opts:
+        if opt.strip().startswith(opt_name):
+            a = opt.split('=', 1)
+            if len(a) == 2:
+                return a[1].strip("'\"")
+    return None            
 
-def get_file_specs(default_specs, opt_content):
+def getopt_output_filename(default_filename, opt_content):
+    value = get_option_value('[output]', 'filename', opt_content)
+    if value is None:
+        return default_filename
+    else:
+        return value
+
+
+def getopt_filespecs(default_specs, opt_content):
     entries = get_option_entries('[match]', opt_content)
     if len(entries) == 0:
         return default_specs
@@ -427,7 +444,7 @@ def get_file_specs(default_specs, opt_content):
         return [entry.strip("'\" ") for entry in entries]
 
 
-def get_dirs_to_scan(default_dirs, opt_content):
+def getopt_dirs_to_scan(default_dirs, opt_content):
     entries = get_option_entries('[folders]', opt_content)
     if len(entries) == 0:
         return default_dirs
@@ -444,8 +461,8 @@ def get_dirs_to_scan(default_dirs, opt_content):
         return dirs
 
 
-def get_output_filename(given_filename, desired_suffix):
-    p = Path(given_filename).resolve()
+def get_output_filename(args_filename, desired_suffix):
+    p = Path(args_filename).resolve()
     if p.suffix.lower() == desired_suffix:
         s = str(p)
     else:
@@ -599,7 +616,6 @@ def main():
     ap.add_argument(
         '-o', '--output-file',
         dest = 'output_file',
-        default = default_output_file,
         action = 'store',
         help = "Name of output file. The '.html' extension will be "
             + "added if not specified." )
@@ -633,15 +649,26 @@ def main():
 
     #  endregion
 
-    global args
-    
     args_parsed = ap.parse_args()
+
+    if args_parsed.optfile is None:
+        opt_lines = []
+    else:
+        p = Path(args_parsed.optfile).resolve()
+        if not p.exists():
+            raise SystemExit(f"Options file not found: {p}")
+        with open(p, 'r') as f:
+            opt_lines = f.readlines()
+
+    if args_parsed.output_file is None:
+        args_parsed.output_file = getopt_output_filename(default_output_file, opt_lines)
 
     if len(args_parsed.exclude_path) > 0:
         args_parsed.exclude_path = str(Path(args_parsed.exclude_path).resolve())
 
     #  Put application arguments into a named tuple so they are immutable
     #  from this point.
+    global args    
     args = AppArgs(
         args_parsed.folders, 
         args_parsed.optfile, 
@@ -662,19 +689,16 @@ def main():
             raise SystemExit('Path not found: ' + folder)
         dirs_to_scan.append(ScanProps(folder, args.recurse))
 
-    global file_specs
-    if args.optfile is None:
-        file_specs = default_file_specs
-    else:
-        p = Path(args.optfile).resolve()
-        if not p.exists():
-            raise SystemExit(f"Options file not found: {p}")
-        with open(p, 'r') as f:
-            opt_lines = f.readlines()
-        file_specs = get_file_specs(default_file_specs, opt_lines)
-        dirs_to_scan = get_dirs_to_scan(dirs_to_scan, opt_lines)
 
-    # raise SystemExit('STOPPED')
+    global file_specs
+    file_specs = getopt_filespecs(default_file_specs, opt_lines)
+
+    dirs_to_scan = getopt_dirs_to_scan(dirs_to_scan, opt_lines)
+
+    assert(args.output_file is not None)
+    
+    if debug_stop_after_args:
+        raise SystemExit('STOPPED')
 
 
     #----------------------------------------------------------------------
