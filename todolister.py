@@ -5,7 +5,7 @@
 #
 # 
 #
-# 2021-05-12
+# 2021-08-10
 #----------------------------------------------------------------------
 
 import argparse
@@ -27,7 +27,7 @@ AppArgs = namedtuple('AppArgs', 'folders, optfile, recurse, mtime, output_file, 
     + 'dotext, nohtml, exclude_path, page_title'
 )
 
-app_version = '20210809.1'
+app_version = '20210810.1'
 
 css_mode = 2
 # 0 = link to external css file (use for trying css changes).
@@ -436,12 +436,29 @@ def getopt_output_filename(default_filename, opt_content):
         return value
 
 
+def opt_value_true(value):
+    assert(value is not None)
+    #  The option setting can be values such as True or False, Yes or No,
+    #  Y or N, 1 or 0. The values True, Yes, and 1 are considered true,
+    #  though only the first character is checked (so, for example, 
+    #  'turtle' is also true).
+    return (len(value) > 0) and (value.strip("'\"")[0].lower() in ('t', 'y', '1'))
+
+
 def getopt_mtime(default_mtime, opt_content):
     value = get_option_value('[output]', 'by_modified_time_desc', opt_content)
     if value is None:
         return default_mtime
     else:
-        return (len(value) > 0) and (value[0].lower() in ('t', 'y', '1'))
+        return opt_value_true(value)
+
+
+def getopt_dotext(default_dotext, opt_content):
+    value = get_option_value('[output]', 'do_text_file', opt_content)
+    if value is None:
+        return default_dotext
+    else:
+        return opt_value_true(value)
 
 
 def getopt_filespecs(default_specs, opt_content):
@@ -667,6 +684,8 @@ def main():
         with open(p, 'r') as f:
             opt_lines = f.readlines()
 
+    #  Only check the options file, and potentially use the default value, if
+    #  the output file name was not specified as a command line argument.
     if args_parsed.output_file is None:
         args_parsed.output_file = getopt_output_filename(default_output_file, opt_lines)
 
@@ -682,7 +701,7 @@ def main():
         args_parsed.recurse, 
         getopt_mtime(args_parsed.mtime, opt_lines), 
         args_parsed.output_file, 
-        args_parsed.dotext, 
+        getopt_dotext(args_parsed.dotext, opt_lines),
         args_parsed.nohtml, 
         args_parsed.exclude_path, 
         args_parsed.page_title
