@@ -27,7 +27,7 @@ AppArgs = namedtuple('AppArgs', 'folders, optfile, recurse, mtime, output_file, 
     + 'dotext, nohtml, page_title'
 )
 
-app_version = '20210810.1'
+app_version = '20210810.2'
 
 css_mode = 2
 # 0 = link to external css file (use for trying css changes).
@@ -499,7 +499,8 @@ def getopt_dirs_to_scan(default_dirs, opt_content):
                 recurse = True
                 s = s.strip('+')
             s = s.strip("'\" ")
-            dirs.append(ScanProps(s, recurse))
+            #dirs.append(ScanProps(s, recurse))
+            dirs.append(ScanProps(str(Path(s).expanduser().resolve()), recurse))
         return dirs
 
 
@@ -511,12 +512,12 @@ def getopt_dirs_to_exclude(default_dirs, opt_content):
         dirs = []
         for entry in entries:
             s = entry.strip("'\" ")
-            dirs.append(str(Path(s).resolve()))
+            dirs.append(str(Path(s).expanduser().resolve()))
         return dirs
 
 
 def get_output_filename(args_filename, desired_suffix):
-    p = Path(args_filename).resolve()
+    p = Path(args_filename).expanduser().resolve()
     if p.suffix.lower() == desired_suffix:
         s = str(p)
     else:
@@ -709,7 +710,7 @@ def main():
     if args_parsed.optfile is None:
         opt_lines = []
     else:
-        p = Path(args_parsed.optfile).resolve()
+        p = Path(args_parsed.optfile).expanduser().resolve()
         if not p.exists():
             raise SystemExit(f"Options file not found: {p}")
         with open(p, 'r') as f:
@@ -736,7 +737,7 @@ def main():
 
     dirs_to_scan = []
     for folder in args.folders:
-        folder = str(Path(folder).resolve())
+        folder = str(Path(folder).expanduser().resolve())
         print(f"Folder {folder}")
         if not Path(folder).exists():
             raise SystemExit('Path not found: ' + folder)
@@ -746,7 +747,7 @@ def main():
     dirs_to_exclude = []
     for excluded in args_parsed.exclude_path.strip("'\"").split(';'):
         if len(excluded) > 0:
-            dirs_to_exclude.append(str(Path(excluded).resolve()))
+            dirs_to_exclude.append(str(Path(excluded).expanduser().resolve()))
     
     dirs_to_exclude = getopt_dirs_to_exclude(dirs_to_exclude, opt_lines)
 
