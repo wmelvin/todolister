@@ -461,6 +461,14 @@ def getopt_dotext(default_dotext, opt_content):
         return opt_value_true(value)
 
 
+def getopt_no_html(default_no_html, opt_content):
+    value = get_option_value('[output]', 'no_html', opt_content)
+    if value is None:
+        return default_no_html
+    else:
+        return opt_value_true(value)
+
+
 def getopt_filespecs(default_specs, opt_content):
     entries = get_option_entries('[match]', opt_content)
     if len(entries) == 0:
@@ -702,7 +710,7 @@ def main():
         getopt_mtime(args_parsed.mtime, opt_lines), 
         args_parsed.output_file, 
         getopt_dotext(args_parsed.dotext, opt_lines),
-        args_parsed.nohtml, 
+        getopt_no_html(args_parsed.nohtml, opt_lines),
         args_parsed.exclude_path, 
         args_parsed.page_title
         )
