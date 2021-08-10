@@ -24,7 +24,7 @@ TodoItem = namedtuple('TodoItem', 'is_flagged, is_elevated, item_text, source_fi
 TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 
 AppArgs = namedtuple('AppArgs', 'folders, optfile, recurse, mtime, output_file, '
-    + 'dotext, nohtml, exclude_path, page_title'
+    + 'dotext, nohtml, page_title'
 )
 
 app_version = '20210810.1'
@@ -57,8 +57,8 @@ def matches_filespec(file_name):
 
 
 def exclude_dir(dir_name):
-    #return dir_name == Path(args.exclude_path).resolve()
-    return dir_name == args.exclude_path
+    return any(dir_name == dir for dir in dirs_to_exclude)
+
 #TODO: Is simple string match good enough?
 
 
@@ -436,13 +436,13 @@ def getopt_output_filename(default_filename, opt_content):
         return value
 
 
-def opt_value_true(value):
+def opt_is_true(value):
     assert(value is not None)
     #  The option setting can be values such as True or False, Yes or No,
     #  Y or N, 1 or 0. The values True, Yes, and 1 are considered true,
     #  though only the first character is checked (so, for example, 
     #  'turtle' is also true).
-    return (len(value) > 0) and (value.strip("'\"")[0].lower() in ('t', 'y', '1'))
+    return (len(value) > 0) and (value[0].lower() in ('t', 'y', '1'))
 
 
 def getopt_mtime(default_mtime, opt_content):
@@ -450,7 +450,7 @@ def getopt_mtime(default_mtime, opt_content):
     if value is None:
         return default_mtime
     else:
-        return opt_value_true(value)
+        return opt_is_true(value)
 
 
 def getopt_dotext(default_dotext, opt_content):
@@ -458,7 +458,7 @@ def getopt_dotext(default_dotext, opt_content):
     if value is None:
         return default_dotext
     else:
-        return opt_value_true(value)
+        return opt_is_true(value)
 
 
 def getopt_no_html(default_no_html, opt_content):
@@ -466,7 +466,15 @@ def getopt_no_html(default_no_html, opt_content):
     if value is None:
         return default_no_html
     else:
-        return opt_value_true(value)
+        return opt_is_true(value)
+
+
+def getopt_title(default_title, opt_content):
+    value = get_option_value('[output]', 'title', opt_content)
+    if value is None:
+        return default_title
+    else:
+        return value
 
 
 def getopt_filespecs(default_specs, opt_content):
@@ -475,6 +483,7 @@ def getopt_filespecs(default_specs, opt_content):
         return default_specs
     else:
         return [entry.strip("'\" ") for entry in entries]
+
 
 def getopt_dirs_to_scan(default_dirs, opt_content):
     entries = get_option_entries('[folders]', opt_content)
@@ -513,11 +522,13 @@ def write_html_output(todo_files, flagged_items, todo_tags):
     out_file_name = get_output_filename(args.output_file, '.html')
     print("Writing file [{0}].".format(out_file_name))
     with open(out_file_name, 'w') as f:
-        f.write(html_head(args.page_title) + "\n")
-        f.write('<div id="wrapper">' + "\n")
-        f.write('<div id="content">' + "\n")
+        f.write("{0}\n".format(html_head(args.page_title)))
+        f.write('<div id="wrapper">\n')
+        f.write('<div id="content">\n')
         
-        f.write('<h1><a name="top">To-do Items</a></h1>' + "\n")
+        # f.write('<h1><a name="top">To-do Items</a></h1>' + "\n")
+        
+        f.write('<h1><a name="top">{0}</a></h1>\n'.format(args.page_title))
         
         f.write(
             contents_section(
@@ -527,21 +538,20 @@ def write_html_output(todo_files, flagged_items, todo_tags):
             ) + "\n"
         )
 
-        f.write(flagged_items_html(flagged_items) + "\n")
+        f.write("{0}\n".format(flagged_items_html(flagged_items)))
 
-        f.write(tags_section(todo_tags) + "\n")
+        f.write("{0}\n".format(tags_section(todo_tags)))
 
-        f.write(main_section(todo_files) + "\n")
+        f.write("{0}\n".format(main_section(todo_files)))
 
         f.write('<div id="footer">' + "\n")
         f.write('Created {0} by todolister.py (version {1}).'.format(
             datetime.now().strftime('%Y-%m-%d %H:%M'),
             app_version
         ) + "\n")
-        f.write('</div>' + "\n\n")
-
-        f.write('</div>  <!--end content -->' + "\n")
-        f.write('</div>  <!--end wrapper -->' + "\n")
+        f.write('</div>\n\n')
+        f.write('</div>  <!--end content -->\n')
+        f.write('</div>  <!--end wrapper -->\n')        
         f.write(html_tail())
 
 
@@ -669,7 +679,7 @@ def main():
         dest = 'exclude_path',
         default = '',
         action = 'store',
-        help = 'Path to exclude from scan.')
+        help = 'Path(s) to exclude from scan. Separate multiple paths using semicolons.')
     #TODO: Perhaps expand on the help message.
 
     ap.add_argument(
@@ -697,8 +707,8 @@ def main():
     if args_parsed.output_file is None:
         args_parsed.output_file = getopt_output_filename(default_output_file, opt_lines)
 
-    if len(args_parsed.exclude_path) > 0:
-        args_parsed.exclude_path = str(Path(args_parsed.exclude_path).resolve())
+    # if len(args_parsed.exclude_path) > 0:
+    #     args_parsed.exclude_path = str(Path(args_parsed.exclude_path).resolve())
 
     #  Put application arguments into a named tuple so they are immutable
     #  from this point.
@@ -711,8 +721,7 @@ def main():
         args_parsed.output_file, 
         getopt_dotext(args_parsed.dotext, opt_lines),
         getopt_no_html(args_parsed.nohtml, opt_lines),
-        args_parsed.exclude_path, 
-        args_parsed.page_title
+        getopt_title(args_parsed.page_title, opt_lines)
         )
 
     dirs_to_scan = []
@@ -723,6 +732,11 @@ def main():
             raise SystemExit('Path not found: ' + folder)
         dirs_to_scan.append(ScanProps(folder, args.recurse))
 
+    global dirs_to_exclude
+    dirs_to_exclude = []
+    for excluded in args_parsed.exclude_path.strip("'\"").split(';'):
+        if len(excluded) > 0:
+            dirs_to_exclude.append(str(Path(excluded).resolve()))
 
     global file_specs
     file_specs = getopt_filespecs(default_file_specs, opt_lines)
