@@ -436,13 +436,20 @@ def getopt_output_filename(default_filename, opt_content):
         return value
 
 
+def getopt_mtime(default_mtime, opt_content):
+    value = get_option_value('[output]', 'by_modified_time_desc', opt_content)
+    if value is None:
+        return default_mtime
+    else:
+        return (len(value) > 0) and (value[0].lower() in ('t', 'y', '1'))
+
+
 def getopt_filespecs(default_specs, opt_content):
     entries = get_option_entries('[match]', opt_content)
     if len(entries) == 0:
         return default_specs
     else:
         return [entry.strip("'\" ") for entry in entries]
-
 
 def getopt_dirs_to_scan(default_dirs, opt_content):
     entries = get_option_entries('[folders]', opt_content)
@@ -673,7 +680,7 @@ def main():
         args_parsed.folders, 
         args_parsed.optfile, 
         args_parsed.recurse, 
-        args_parsed.mtime, 
+        getopt_mtime(args_parsed.mtime, opt_lines), 
         args_parsed.output_file, 
         args_parsed.dotext, 
         args_parsed.nohtml, 
