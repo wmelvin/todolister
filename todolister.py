@@ -66,6 +66,7 @@ def get_matching_files(dir_name, do_recurse):
     p = Path(dir_name).resolve()
 
     if exclude_dir(str(p)):
+        print('  Exclude [{0}]'.format(str(p)))
         return
 
     for f in [x for x in p.iterdir() if x.is_file()]:
@@ -502,6 +503,18 @@ def getopt_dirs_to_scan(default_dirs, opt_content):
         return dirs
 
 
+def getopt_dirs_to_exclude(default_dirs, opt_content):
+    entries = get_option_entries('[exclude]', opt_content)
+    if len(entries) == 0:
+        return default_dirs
+    else:
+        dirs = []
+        for entry in entries:
+            s = entry.strip("'\" ")
+            dirs.append(str(Path(s).resolve()))
+        return dirs
+
+
 def get_output_filename(args_filename, desired_suffix):
     p = Path(args_filename).resolve()
     if p.suffix.lower() == desired_suffix:
@@ -617,7 +630,7 @@ def get_item_tags(todo_files):
 
 def main():
 
-    print('(todolister.py version {0})'.format(app_version))
+    print('Running todolister.py (version {0}).'.format(app_version))
 
     #  region -- define arguments
 
@@ -707,9 +720,6 @@ def main():
     if args_parsed.output_file is None:
         args_parsed.output_file = getopt_output_filename(default_output_file, opt_lines)
 
-    # if len(args_parsed.exclude_path) > 0:
-    #     args_parsed.exclude_path = str(Path(args_parsed.exclude_path).resolve())
-
     #  Put application arguments into a named tuple so they are immutable
     #  from this point.
     global args    
@@ -737,6 +747,8 @@ def main():
     for excluded in args_parsed.exclude_path.strip("'\"").split(';'):
         if len(excluded) > 0:
             dirs_to_exclude.append(str(Path(excluded).resolve()))
+    
+    dirs_to_exclude = getopt_dirs_to_exclude(dirs_to_exclude, opt_lines)
 
     global file_specs
     file_specs = getopt_filespecs(default_file_specs, opt_lines)
@@ -783,8 +795,7 @@ def main():
     if args.dotext:
         write_text_output(todo_files)
 
-
-    print("Done (todolister.py).")
+    print('Done (todolister.py - version {0}).'.format(app_version))
 
 
 if __name__ == "__main__":
