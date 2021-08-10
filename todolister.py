@@ -27,7 +27,7 @@ AppArgs = namedtuple('AppArgs', 'folders, optfile, recurse, mtime, output_file, 
     + 'dotext, nohtml, page_title'
 )
 
-app_version = '20210810.2'
+app_version = '20210810.3'
 
 css_mode = 2
 # 0 = link to external css file (use for trying css changes).
@@ -437,13 +437,21 @@ def getopt_output_filename(default_filename, opt_content):
         return value
 
 
-def opt_is_true(value):
+def opt_is_true(value, prompt):
     assert(value is not None)
+
+    s = value.lower()
+
+    if s == 'ask':
+        print('\n(Input requested per options file.)')
+        s = input('{0} '.format(prompt))
+        print(' ')
+
     #  The option setting can be values such as True or False, Yes or No,
     #  Y or N, 1 or 0. The values True, Yes, and 1 are considered true,
     #  though only the first character is checked (so, for example, 
     #  'turtle' is also true).
-    return (len(value) > 0) and (value[0].lower() in ('t', 'y', '1'))
+    return (len(s) > 0) and (s[0].lower() in ('t', 'y', '1'))
 
 
 def getopt_mtime(default_mtime, opt_content):
@@ -451,7 +459,7 @@ def getopt_mtime(default_mtime, opt_content):
     if value is None:
         return default_mtime
     else:
-        return opt_is_true(value)
+        return opt_is_true(value, 'Sort by file-modified time in descending order (y/N)?')
 
 
 def getopt_dotext(default_dotext, opt_content):
@@ -459,7 +467,7 @@ def getopt_dotext(default_dotext, opt_content):
     if value is None:
         return default_dotext
     else:
-        return opt_is_true(value)
+        return opt_is_true(value, 'Create text file output (y/N)?')
 
 
 def getopt_no_html(default_no_html, opt_content):
@@ -467,7 +475,7 @@ def getopt_no_html(default_no_html, opt_content):
     if value is None:
         return default_no_html
     else:
-        return opt_is_true(value)
+        return opt_is_true(value, 'Skip creating HTML file output (y/N)?')
 
 
 def getopt_title(default_title, opt_content):
