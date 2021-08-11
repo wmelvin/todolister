@@ -24,10 +24,10 @@ TodoItem = namedtuple('TodoItem', 'is_flagged, is_elevated, item_text, source_fi
 TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
 
 AppArgs = namedtuple('AppArgs', 'folders, optfile, recurse, mtime, output_file, '
-    + 'dotext, nohtml, page_title'
+    + 'do_text, do_text_dt, nohtml, page_title'
 )
 
-app_version = '20210810.3'
+app_version = '20210811.1'
 
 css_mode = 2
 # 0 = link to external css file (use for trying css changes).
@@ -462,12 +462,20 @@ def getopt_mtime(default_mtime, opt_content):
         return opt_is_true(value, 'Sort by file-modified time in descending order (y/N)?')
 
 
-def getopt_dotext(default_dotext, opt_content):
+def getopt_do_text(default_do_text, opt_content):
     value = get_option_value('[output]', 'do_text_file', opt_content)
     if value is None:
-        return default_dotext
+        return default_do_text
     else:
         return opt_is_true(value, 'Create text file output (y/N)?')
+
+
+def getopt_do_text_dt(default_do_text_dt, opt_content):
+    value = get_option_value('[output]', 'do_text_file_dt', opt_content)
+    if value is None:
+        return default_do_text_dt
+    else:
+        return opt_is_true(value, 'Create text file output with date_time in file name (y/N)?')
 
 
 def getopt_no_html(default_no_html, opt_content):
@@ -524,8 +532,12 @@ def getopt_dirs_to_exclude(default_dirs, opt_content):
         return dirs
 
 
-def get_output_filename(args_filename, desired_suffix):
+def get_output_filename(args_filename, date_time, desired_suffix):
     p = Path(args_filename).expanduser().resolve()
+    
+    if date_time is not None:
+        p = Path('{0}_{1}'.format(p.with_suffix(''), date_time.strftime('%Y%m%d_%H%M%S')))
+
     if p.suffix.lower() == desired_suffix:
         s = str(p)
     else:
@@ -541,7 +553,7 @@ def get_output_filename(args_filename, desired_suffix):
 
 
 def write_html_output(todo_files, flagged_items, todo_tags):
-    out_file_name = get_output_filename(args.output_file, '.html')
+    out_file_name = get_output_filename(args.output_file, None, '.html')
     print("Writing file [{0}].".format(out_file_name))
     with open(out_file_name, 'w') as f:
         f.write("{0}\n".format(html_head(args.page_title)))
@@ -577,10 +589,18 @@ def write_html_output(todo_files, flagged_items, todo_tags):
         f.write(html_tail())
 
 
-def write_text_output(todo_files):
+def write_text_output(todo_files, include_datetime):
     sep = '-' * 70
-    out_file_name = get_output_filename(args.output_file, '.txt')
+
+    dt = datetime.now()
+    
+    if include_datetime:
+        out_file_name = get_output_filename(args.output_file, dt, '.txt')
+    else:
+        out_file_name = get_output_filename(args.output_file, None, '.txt')
+
     print("Writing file [{0}].".format(out_file_name))
+
     with open(out_file_name, 'w') as f:
         f.write("Gathered ToDo Items\n")
         for todo_file in todo_files:
@@ -594,7 +614,7 @@ def write_text_output(todo_files):
                 f.write(s)
         f.write(sep + "\n")
         s = "Created {0} by todolister.py (version {1}).\n".format(
-            datetime.now().strftime('%Y-%m-%d %H:%M'),
+            dt.strftime('%Y-%m-%d %H:%M'),
             app_version
         )
         f.write(s)
@@ -686,9 +706,15 @@ def main():
 
     ap.add_argument(
         '-t', '--text-file',
-        dest = 'dotext',
+        dest = 'do_text',
         action = 'store_true',
         help = 'Create a text file output.')
+
+    ap.add_argument(
+        '-d', '--text-file-dt',
+        dest = 'do_text_dt',
+        action = 'store_true',
+        help = 'Create a text file output with the creation date_time in the file name.')
 
     ap.add_argument(
         '-n', '--no-html',
@@ -738,7 +764,8 @@ def main():
         args_parsed.recurse, 
         getopt_mtime(args_parsed.mtime, opt_lines), 
         args_parsed.output_file, 
-        getopt_dotext(args_parsed.dotext, opt_lines),
+        getopt_do_text(args_parsed.do_text, opt_lines),
+        getopt_do_text_dt(args_parsed.do_text_dt, opt_lines),
         getopt_no_html(args_parsed.nohtml, opt_lines),
         getopt_title(args_parsed.page_title, opt_lines)
         )
@@ -801,8 +828,8 @@ def main():
     if not args.nohtml:
         write_html_output(todo_files, flagged_items, item_tags)
 
-    if args.dotext:
-        write_text_output(todo_files)
+    if args.do_text or args.do_text_dt:
+        write_text_output(todo_files, args.do_text_dt)
 
     print('Done (todolister.py - version {0}).'.format(app_version))
 
