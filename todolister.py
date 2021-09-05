@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # todolister.py
 #
 # 
 #
-# 2021-08-10
-#----------------------------------------------------------------------
+# 2021-09-05
+# ---------------------------------------------------------------------
 
 import argparse
 import re
@@ -19,15 +19,25 @@ ScanProps = namedtuple('ScanProps', 'dir_name, do_recurse')
 
 FileInfo = namedtuple('FileInfo', 'last_modified, full_name')
 
-TodoItem = namedtuple('TodoItem', 'is_flagged, is_elevated, item_text, source_file')
+TodoItem = namedtuple(
+    'TodoItem',
+    'is_flagged, is_elevated, item_text, source_file'
+)
 
-TodoFile = namedtuple('TodoFile', 'last_modified, full_name, todo_items')
+TodoFile = namedtuple(
+    'TodoFile',
+    'last_modified, full_name, todo_items'
+)
 
-AppArgs = namedtuple('AppArgs', 'folders, optfile, recurse, mtime, output_file, '
+AppArgs = namedtuple(
+    'AppArgs',
+    'folders, optfile, recurse, mtime, output_file, '
     + 'do_text, do_text_dt, nohtml, page_title'
 )
 
-app_version = '20210811.1'
+app_version = '210905.1'
+
+pub_version = '1.0.dev1'
 
 css_mode = 2
 # 0 = link to external css file (use for trying css changes).
@@ -59,7 +69,7 @@ def matches_filespec(file_name):
 def exclude_dir(dir_name):
     return any(dir_name == dir for dir in dirs_to_exclude)
 
-#TODO: Is simple string match good enough?
+# TODO: Is simple string match good enough?
 
 
 def get_matching_files(dir_name, do_recurse):
@@ -81,40 +91,63 @@ def get_matching_files(dir_name, do_recurse):
 
 def get_todo_items(file_name):
     todo_items = []
-    with open(file_name, 'r', errors='replace') as text_file:
-        in_todo = False
-        todo_text = ''
-        is_flagged = False
-        is_elevated = False
-        lines = text_file.readlines()
-        for line in lines:
-            stripped = line.strip()
-            if in_todo:
-                if len(stripped) == 0:
-                    in_todo = False
-                    if len(todo_text) > 0:
-                        todo_items.append(TodoItem(is_flagged, is_elevated, todo_text, file_name))
-                        todo_text = ''
-                        is_flagged = False
-                        is_elevated = False
+    try:
+        with open(file_name, 'r', errors='replace') as text_file:
+            in_todo = False
+            todo_text = ''
+            is_flagged = False
+            is_elevated = False
+            lines = text_file.readlines()
+            for line in lines:
+                stripped = line.strip()
+                if in_todo:
+                    if len(stripped) == 0:
+                        in_todo = False
+                        if len(todo_text) > 0:
+                            todo_items.append(
+                                TodoItem(
+                                    is_flagged,
+                                    is_elevated,
+                                    todo_text,
+                                    file_name
+                                )
+                            )
+                            todo_text = ''
+                            is_flagged = False
+                            is_elevated = False
+                    else:
+                        todo_text += line
                 else:
-                    todo_text += line
-            else:
-                if stripped.startswith('[ ]'):
-                    in_todo = True
-                    is_flagged = stripped.startswith('[ ]*')
-                    is_elevated = stripped.startswith('[ ]+')
-                    todo_text += line
+                    if stripped.startswith('[ ]'):
+                        in_todo = True
+                        is_flagged = stripped.startswith('[ ]*')
+                        is_elevated = stripped.startswith('[ ]+')
+                        todo_text += line
 
-        # Save last item, in case there were no blank lines at the
-        # end of the file.
-        if len(todo_text) > 0:
-            todo_items.append(TodoItem(is_flagged, is_elevated, todo_text, file_name))
+            # Save last item, in case there were no blank lines at the
+            # end of the file.
+            if len(todo_text) > 0:
+                todo_items.append(
+                    TodoItem(is_flagged, is_elevated, todo_text, file_name)
+                )
+    except PermissionError:
+        err_msg = "ERROR (PermissionError): Cannot read {0}".format(file_name)
+        print(err_msg)
+        todo_items.append(
+            TodoItem(True, True, err_msg, file_name)
+        )
+
+    # except:
+    #     err_msg = "ERROR: Cannot read {0}".format(file_name)
+    #     print(err_msg)
+    #     todo_items.append(
+    #         TodoItem(True, True, err_msg, file_name)
+    #     )
 
     return todo_items
 
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 #  region -- CSS styling in output:
 
 def get_css_from_file(indent_len):
@@ -133,37 +166,33 @@ def embed_style():
     # after running with css_mode = 1.
     return '''
     <style>
-        #wrapper {
-            padding: 10px;
-        }
-        #content {
-            max-width: 960px;
-        }
+        h1 {color: steelblue;}
+        h2 {color: slategrey;}
+        #wrapper {padding: 10px;}
+        #content {max-width: 960px;}
         #footer {
-            border-top: 2px solid rosybrown;
+            border-top: 2px solid #999;
             font-family: monospace;
             font-size: medium;
-            color: darkolivegreen;
+            color: #111;
         }
-        #main {
-            border-top: 2px solid rosybrown;
-        }
+        #main {border-top: 2px solid #999;}
         .fileheader {
-            border: 1px solid rgb(95, 238, 238);    
-            background-color: rgb(207, 240, 240);
+            border: 1px solid #9797CD;
+            background-color: #EEF;
             padding-left: 10px;
-            border-radius: 12px;
         }
         .filename {
             font-family: monospace;
             font-size: large;
+            font-weight: bold;
             color: navy;
         }
         .filetime {
+            margin-left: 5px;
             font-family: monospace;
             font-size: small;
-            color: darkslategrey;  
-            margin-left: 5px;
+            color: #111;
         }
         .filecontent {
             margin-left: 20px;
@@ -172,75 +201,73 @@ def embed_style():
         }
         pre {
             margin: 0px;
+            font-family: Consolas, monospace;
         }
         .item0, .item1 {
             padding-left: 10px;
             padding-top: 5px;
-            border-radius: 8px;
             margin: 4px 0 8px;
         }
-        .item0 {
-            background-color: rgb(232, 248, 250);
-        }
-        .item1 {
-            background-color: rgb(250, 250, 232);
-        }
-        .flagged {
-            font-weight: bold;
-        }
+        .item0 {background-color: #F5F5F5;}
+        .item1 {background-color: #FFF;}
+        .flagged {font-weight: bold;}
         #flagged_section, #tags_section, #contents_section {
-            border-top: 2px solid rosybrown;
+            border-top: 2px solid #999;
             margin-bottom: 30px;
         }
         #flagged_items a, #tagged_items a, #contents_section a {
             font-family: monospace;
             font-size: large;
+            color: navy;
         }
-        .flagged_items {
+        #flagged_items {
             margin-left: 20px;
             margin-right: 20px;
             margin-bottom: 25px;
         }
-        .flag0, .flag1, .tag0, .tag1 {
+        .flag0, .flag1 {
             padding-left: 10px;
             padding-top: 5px;
-            border-radius: 8px;
             margin: 4px 0 8px;
         }
-        .flag0, .tag0 {
-            background-color: rgb(250, 237, 232);
-        }
-        .flag1, .tag1 {
-            background-color: rgb(250, 245, 232);
-        }
-        .tagheader {
-            border: 1px solid rgb(95, 238, 238);    
-            background-color: rgb(207, 240, 240);
+        #tagged_items {margin-bottom: 25px;}
+        .tag0, .tag1 {
             padding-left: 10px;
-            border-radius: 12px;
+            padding-top: 5px;
+            margin: 4px auto 8px 20px;
         }
-        .toplink {
-            font-size: x-small;
+        .flag0, .tag0 {background-color: #F5F5F5;}
+        .flag1, .tag1 {background-color: #FFF;}
+        .tagheader {
+            margin-top: 20px;
+            padding: 5px 5px 5px 10px;
+            border: 1px solid rgb(231, 231, 146);
+            background-color: rgb(250, 250, 232);
         }
+        .toplink {font-size: x-small;}
+        #contents_section h3 {margin-left: 20px;}
+        #contents_section ul {margin-left: 20px;}
     </style>''' + "\n"
 
 #  endregion
 
-#----------------------------------------------------------------------
+
+# ---------------------------------------------------------------------
 
 def html_head(title):
     s = "<!DOCTYPE html>\n"
     s += "<html lang=\"en\">\n"
     s += "<head>\n"
     s += "    <meta charset=\"UTF-8\">\n"
-    s += "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
+    s += "    <meta name=\"viewport\" content=\""
+    s += "width=device-width, initial-scale=1.0\">\n"
     s += "    <title>{0}</title>\n".format(title)
 
     if css_mode == 2:
         s += embed_style()
     elif css_mode == 1:
         s += "    <style>\n"
-        s += get_css_from_file(indent_len = 8)
+        s += get_css_from_file(indent_len=8)
         s += "    </style>\n"
     else:
         s += "    <link rel=\"stylesheet\" href=\"style.css\" />\n"
@@ -286,20 +313,21 @@ def todo_item_html(item, row):
 
 
 def as_link_name(file_name):
-    return file_name.strip(' /\\').replace(' ','_').replace('/','-').replace('.','-')
+    return file_name.strip(' /\\') \
+        .replace(' ', '_').replace('/', '-').replace('.', '-')
 
 
 def contents_section(todo_files, any_flags, any_tags):
     s = '<div id="contents_section">' + "\n"
     s += '<h2>Contents</h2>' + "\n"
-    
+
     s += '<h3>Sections</h2>' + "\n"
     s += '<ul>' + "\n"
     if any_flags:
         s += '<li><a href="#FlaggedItems">Flagged Items</a></li>' + "\n"
     if any_tags:
         s += '<li><a href="#TaggedItems">Tagged Items</a></li>' + "\n"
-    s += '<li><a href="#Main">Files with To-do Items</a></li>' + "\n"    
+    s += '<li><a href="#Main">Files with To-do Items</a></li>' + "\n"
     s += '</ul>' + "\n"
 
     s += '<h3>Files</h2>' + "\n"
@@ -377,7 +405,6 @@ def tags_section(todo_tags):
         for item in items:
             row += 1
             s += tagged_item_html(item, row)
-        s += '</div>' + "\n"
 
     s += '</div>  <!--end tagged_items -->' + "\n"
     s += '</div>  <!--end tags_section -->' + "\n"
@@ -420,6 +447,7 @@ def get_option_entries(opt_section, opt_content):
                 in_section = True
     return result
 
+
 def get_option_value(opt_section, opt_name, opt_content):
     opts = get_option_entries(opt_section, opt_content)
     for opt in opts:
@@ -427,7 +455,8 @@ def get_option_value(opt_section, opt_name, opt_content):
             a = opt.split('=', 1)
             if len(a) == 2:
                 return a[1].strip("'\"")
-    return None            
+    return None
+
 
 def getopt_output_filename(default_filename, opt_content):
     value = get_option_value('[output]', 'filename', opt_content)
@@ -449,7 +478,7 @@ def opt_is_true(value, prompt):
 
     #  The option setting can be values such as True or False, Yes or No,
     #  Y or N, 1 or 0. The values True, Yes, and 1 are considered true,
-    #  though only the first character is checked (so, for example, 
+    #  though only the first character is checked (so, for example,
     #  'turtle' is also true).
     return (len(s) > 0) and (s[0].lower() in ('t', 'y', '1'))
 
@@ -459,7 +488,10 @@ def getopt_mtime(default_mtime, opt_content):
     if value is None:
         return default_mtime
     else:
-        return opt_is_true(value, 'Sort by file-modified time in descending order (y/N)?')
+        return opt_is_true(
+            value,
+            'Sort by file-modified time in descending order (y/N)?'
+        )
 
 
 def getopt_do_text(default_do_text, opt_content):
@@ -475,7 +507,10 @@ def getopt_do_text_dt(default_do_text_dt, opt_content):
     if value is None:
         return default_do_text_dt
     else:
-        return opt_is_true(value, 'Create text file output with date_time in file name (y/N)?')
+        return opt_is_true(
+            value,
+            'Create text file output with date_time in file name (y/N)?'
+        )
 
 
 def getopt_no_html(default_no_html, opt_content):
@@ -515,8 +550,9 @@ def getopt_dirs_to_scan(default_dirs, opt_content):
                 recurse = True
                 s = s.strip('+')
             s = s.strip("'\" ")
-            #dirs.append(ScanProps(s, recurse))
-            dirs.append(ScanProps(str(Path(s).expanduser().resolve()), recurse))
+            dirs.append(
+                ScanProps(str(Path(s).expanduser().resolve()), recurse)
+            )
         return dirs
 
 
@@ -534,19 +570,24 @@ def getopt_dirs_to_exclude(default_dirs, opt_content):
 
 def get_output_filename(args_filename, date_time, desired_suffix):
     p = Path(args_filename).expanduser().resolve()
-    
+
     if date_time is not None:
-        p = Path('{0}_{1}'.format(p.with_suffix(''), date_time.strftime('%Y%m%d_%H%M%S')))
+        p = Path('{0}_{1}'.format(
+            p.with_suffix(''),
+            date_time.strftime('%Y%m%d_%H%M%S'))
+        )
 
     if p.suffix.lower() == desired_suffix:
         s = str(p)
     else:
         s = str(p.with_suffix(desired_suffix))
-    
+
     if matches_filespec(Path(s).name):
-        print("\nWARNING: Output file name matches a specification "
+        print(
+            "\nWARNING: Output file name matches a specification "
             + "for files to be scanned. Its contents will be "
-            + "included in subsequent scans, causing duplication.")
+            + "included in subsequent scans, causing duplication."
+        )
         print("   NAME: {0}\n".format(s))
 
     return s
@@ -559,15 +600,15 @@ def write_html_output(todo_files, flagged_items, todo_tags):
         f.write("{0}\n".format(html_head(args.page_title)))
         f.write('<div id="wrapper">\n')
         f.write('<div id="content">\n')
-        
+
         # f.write('<h1><a name="top">To-do Items</a></h1>' + "\n")
-        
+
         f.write('<h1><a name="top">{0}</a></h1>\n'.format(args.page_title))
-        
+
         f.write(
             contents_section(
-                todo_files, 
-                (len(flagged_items) > 0), 
+                todo_files,
+                (len(flagged_items) > 0),
                 (len(todo_tags) > 0)
             ) + "\n"
         )
@@ -585,7 +626,7 @@ def write_html_output(todo_files, flagged_items, todo_tags):
         ) + "\n")
         f.write('</div>\n\n')
         f.write('</div>  <!--end content -->\n')
-        f.write('</div>  <!--end wrapper -->\n')        
+        f.write('</div>  <!--end wrapper -->\n')
         f.write(html_tail())
 
 
@@ -593,7 +634,7 @@ def write_text_output(todo_files, include_datetime):
     sep = '-' * 70
 
     dt = datetime.now()
-    
+
     if include_datetime:
         out_file_name = get_output_filename(args.output_file, dt, '.txt')
     else:
@@ -606,7 +647,7 @@ def write_text_output(todo_files, include_datetime):
         for todo_file in todo_files:
             if len(todo_file.todo_items) > 0:
                 s = sep + "\n"
-                s += todo_file.full_name  + "\n"
+                s += todo_file.full_name + "\n"
                 s += "  ({0})\n\n".format(todo_file.last_modified)
                 for item in todo_file.todo_items:
                     s += item.item_text + "\n"
@@ -620,7 +661,7 @@ def write_text_output(todo_files, include_datetime):
         f.write(s)
 
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 
 def prune(text):
     if text is None:
@@ -651,11 +692,11 @@ def get_item_tags(todo_files):
                         if wurd in tags.keys():
                             tags[wurd].append(item)
                         else:
-                            tags[wurd]=[item]
+                            tags[wurd] = [item]
     return tags
 
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 
 def main():
 
@@ -667,75 +708,79 @@ def main():
     #  descriptions.
 
     ap = argparse.ArgumentParser(
-        description =
-        'Read text files containing to-do markers and create a HTML report.')
+        description='Read text files containing to-do markers and create a '
+        + 'HTML report.'
+    )
 
     ap.add_argument(
         'folders',
-        nargs = '*',
-        default = [str(Path.cwd())],
-        action = 'store',
-        help = 'Folder(s) to scan. Multiple folders can be specified.')
+        nargs='*',
+        default=[str(Path.cwd())],
+        action='store',
+        help='Folder(s) to scan. Multiple folders can be specified.')
 
     ap.add_argument(
         '-f', '--options-file',
-        dest = 'optfile',
-        action = 'store',
-        help = 'Name of options file.')
+        dest='optfile',
+        action='store',
+        help='Name of options file.')
 
     ap.add_argument(
         '-r', '--recurse',
-        dest = 'recurse',
-        action = 'store_true',
-        help = 'Recurse sub-folders. Applies to all folders specified. '
-            + 'Use an options file to specify the recurse option for '
-            + 'individual folders.')
+        dest='recurse',
+        action='store_true',
+        help='Recurse sub-folders. Applies to all folders specified. '
+        + 'Use an options file to specify the recurse option for '
+        + 'individual folders.')
 
     ap.add_argument(
         '-m', '--mtime-desc',
-        dest = 'mtime',
-        action = 'store_true',
-        help = 'Sort files by last-modified time in descending order.')
+        dest='mtime',
+        action='store_true',
+        help='Sort files by last-modified time in descending order.')
 
     ap.add_argument(
         '-o', '--output-file',
-        dest = 'output_file',
-        action = 'store',
-        help = "Name of output file. The '.html' extension will be "
-            + "added if not specified." )
+        dest='output_file',
+        action='store',
+        help="Name of output file. The '.html' extension will be "
+        + "added if not specified.")
 
     ap.add_argument(
         '-t', '--text-file',
-        dest = 'do_text',
-        action = 'store_true',
-        help = 'Create a text file output.')
+        dest='do_text',
+        action='store_true',
+        help='Create a text file output.')
 
     ap.add_argument(
         '-d', '--text-file-dt',
-        dest = 'do_text_dt',
-        action = 'store_true',
-        help = 'Create a text file output with the creation date_time in the file name.')
+        dest='do_text_dt',
+        action='store_true',
+        help='Create a text file output with the creation date_time in the '
+        + 'file name.')
 
     ap.add_argument(
         '-n', '--no-html',
-        dest = 'nohtml',
-        action = 'store_true',
-        help = 'Do not create the HTML file output. Use with -t to only create a text file output.')
+        dest='nohtml',
+        action='store_true',
+        help='Do not create the HTML file output. Use with -t to only create '
+        + 'a text file output.')
 
     ap.add_argument(
         '-x', '--exclude-path',
-        dest = 'exclude_path',
-        default = '',
-        action = 'store',
-        help = 'Path(s) to exclude from scan. Separate multiple paths using semicolons.')
-    #TODO: Perhaps expand on the help message.
+        dest='exclude_path',
+        default='',
+        action='store',
+        help='Path(s) to exclude from scan. Separate multiple paths using '
+        + 'semicolons.')
+    # TODO: Perhaps expand on the help message.
 
     ap.add_argument(
         '-p', '--page-title',
-        dest = 'page_title',
-        default = 'ToDo Items',
-        action = 'store',
-        help = 'Title for HTML page (will show in browser tab).')
+        dest='page_title',
+        default='ToDo Items',
+        action='store',
+        help='Title for HTML page (will show in browser tab).')
 
     #  endregion
 
@@ -753,17 +798,19 @@ def main():
     #  Only check the options file, and potentially use the default value, if
     #  the output file name was not specified as a command line argument.
     if args_parsed.output_file is None:
-        args_parsed.output_file = getopt_output_filename(default_output_file, opt_lines)
+        args_parsed.output_file = getopt_output_filename(
+            default_output_file, opt_lines
+        )
 
     #  Put application arguments into a named tuple so they are immutable
     #  from this point.
-    global args    
+    global args
     args = AppArgs(
-        args_parsed.folders, 
-        args_parsed.optfile, 
-        args_parsed.recurse, 
-        getopt_mtime(args_parsed.mtime, opt_lines), 
-        args_parsed.output_file, 
+        args_parsed.folders,
+        args_parsed.optfile,
+        args_parsed.recurse,
+        getopt_mtime(args_parsed.mtime, opt_lines),
+        args_parsed.output_file,
         getopt_do_text(args_parsed.do_text, opt_lines),
         getopt_do_text_dt(args_parsed.do_text_dt, opt_lines),
         getopt_no_html(args_parsed.nohtml, opt_lines),
@@ -783,7 +830,7 @@ def main():
     for excluded in args_parsed.exclude_path.strip("'\"").split(';'):
         if len(excluded) > 0:
             dirs_to_exclude.append(str(Path(excluded).expanduser().resolve()))
-    
+
     dirs_to_exclude = getopt_dirs_to_exclude(dirs_to_exclude, opt_lines)
 
     global file_specs
@@ -792,12 +839,12 @@ def main():
     dirs_to_scan = getopt_dirs_to_scan(dirs_to_scan, opt_lines)
 
     assert(args.output_file is not None)
-    
+
     if debug_stop_after_args:
         raise SystemExit('STOPPED')
 
+    # ---------------------------------------------------------------------
 
-    #----------------------------------------------------------------------
     global file_list
     file_list = []
 
