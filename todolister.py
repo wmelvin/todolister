@@ -5,7 +5,7 @@
 #
 # 
 #
-# 2021-09-05
+# 2021-09-06
 # ---------------------------------------------------------------------
 
 import argparse
@@ -35,7 +35,7 @@ AppArgs = namedtuple(
     + 'do_text, do_text_dt, nohtml, page_title'
 )
 
-app_version = '210905.1'
+app_version = '210906.1'
 
 pub_version = '1.0.dev1'
 
@@ -79,14 +79,26 @@ def get_matching_files(dir_name, do_recurse):
         print('  Exclude [{0}]'.format(str(p)))
         return
 
-    for f in [x for x in p.iterdir() if x.is_file()]:
-        if matches_filespec(f.name):
-            ts = datetime.fromtimestamp(f.stat().st_mtime)
-            file_list.append(FileInfo(ts.strftime('%Y-%m-%d %H:%M'), str(f)))
+    try:
+        for f in [x for x in p.iterdir() if x.is_file()]:
+            if matches_filespec(f.name):
+                ts = datetime.fromtimestamp(f.stat().st_mtime)
+                file_list.append(
+                    FileInfo(ts.strftime('%Y-%m-%d %H:%M'), str(f))
+                )
 
-    if do_recurse:
-        for d in [x for x in p.iterdir() if x.is_dir() and not x.is_symlink()]:
-            get_matching_files(d, do_recurse)
+        if do_recurse:
+            for d in [
+                x for x in p.iterdir() if x.is_dir() and not x.is_symlink()
+            ]:
+                get_matching_files(d, do_recurse)
+
+    except PermissionError:
+        msg = "ERROR (PermissionError): Cannot scan directory {0}".format(
+            dir_name
+        )
+        print(msg)
+        error_messages.append(msg)
 
 
 def get_todo_items(file_name):
@@ -131,17 +143,18 @@ def get_todo_items(file_name):
                     TodoItem(is_flagged, is_elevated, todo_text, file_name)
                 )
     except PermissionError:
-        err_msg = "ERROR (PermissionError): Cannot read {0}".format(file_name)
-        print(err_msg)
+        msg = "ERROR (PermissionError): Cannot read {0}".format(file_name)
+        print(msg)
+        error_messages.append(msg)
         todo_items.append(
-            TodoItem(True, True, err_msg, file_name)
+            TodoItem(True, True, msg, file_name)
         )
 
     # except:
-    #     err_msg = "ERROR: Cannot read {0}".format(file_name)
-    #     print(err_msg)
+    #     msg = "ERROR: Cannot read {0}".format(file_name)
+    #     print(msg)
     #     todo_items.append(
-    #         TodoItem(True, True, err_msg, file_name)
+    #         TodoItem(True, True, msg, file_name)
     #     )
 
     return todo_items
@@ -702,6 +715,9 @@ def main():
 
     print('Running todolister.py (version {0}).'.format(app_version))
 
+    global error_messages
+    error_messages = []
+
     #  region -- define arguments
 
     #  Note: Using the term 'folder' instead of 'directory' in argument
@@ -877,6 +893,12 @@ def main():
 
     if args.do_text or args.do_text_dt:
         write_text_output(todo_files, args.do_text_dt)
+
+    if 0 < len(error_messages):
+        print("\nThere were errors!")
+        for msg in error_messages:
+            print(msg)
+        print("")
 
     print('Done (todolister.py - version {0}).'.format(app_version))
 
