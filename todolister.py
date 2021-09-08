@@ -152,13 +152,6 @@ def get_todo_items(file_name):
         error_messages.append(msg)
         todo_items.append(TodoItem(True, True, msg, file_name))
 
-    # except:
-    #     msg = "ERROR: Cannot read {0}".format(file_name)
-    #     print(msg)
-    #     todo_items.append(
-    #         TodoItem(True, True, msg, file_name)
-    #     )
-
     return todo_items
 
 
@@ -266,7 +259,6 @@ def embed_style():
         #contents_section h3 {margin-left: 20px;}
         #contents_section ul {margin-left: 20px;}
     </style>"""
-        + "\n"
     )
 
 
@@ -287,6 +279,7 @@ def html_head(title):
 
     if css_mode == 2:
         s += embed_style()
+        s += "\n"
     elif css_mode == 1:
         s += "    <style>\n"
         s += get_css_from_file(indent_len=8)
@@ -343,27 +336,27 @@ def as_link_name(file_name):
 
 
 def contents_section(todo_files, any_flags, any_tags):
-    s = '<div id="contents_section">' + "\n"
-    s += "<h2>Contents</h2>" + "\n"
+    s = '<div id="contents_section">\n'
+    s += "<h2>Contents</h2>\n"
 
-    s += "<h3>Sections</h2>" + "\n"
-    s += "<ul>" + "\n"
+    s += "<h3>Sections</h2>\n"
+    s += "<ul>\n"
     if any_flags:
-        s += '<li><a href="#FlaggedItems">Flagged Items</a></li>' + "\n"
+        s += '<li><a href="#FlaggedItems">Flagged Items</a></li>\n'
     if any_tags:
-        s += '<li><a href="#TaggedItems">Tagged Items</a></li>' + "\n"
-    s += '<li><a href="#Main">Files with To-do Items</a></li>' + "\n"
-    s += "</ul>" + "\n"
+        s += '<li><a href="#TaggedItems">Tagged Items</a></li>\n'
+    s += '<li><a href="#Main">Files with To-do Items</a></li>\n'
+    s += "</ul>\n"
 
-    s += "<h3>Files</h2>" + "\n"
-    s += "<ul>" + "\n"
+    s += "<h3>Files</h2>\n"
+    s += "<ul>\n"
     for todo_file in todo_files:
         if len(todo_file.todo_items) > 0:
             s += '<li class="flink"><a href="#{0}">{1}</a></li>{2}'.format(
                 as_link_name(todo_file.full_name), todo_file.full_name, "\n"
             )
-    s += "</ul>" + "\n"
-    s += "</div>  <!--end contents_section -->" + "\n"
+    s += "</ul>\n"
+    s += "</div>  <!--end contents_section -->\n"
     return s
 
 
@@ -380,13 +373,13 @@ def flagged_item_html(item, row):
 def flagged_items_html(items):
     if len(items) == 0:
         return ""
-    s = '<div id="flagged_section">' + "\n"
-    s += '<h2><a name="FlaggedItems">Flagged Items</a></h2>' + "\n"
-    s += '<div id="flagged_items">' + "\n"
+    s = '<div id="flagged_section">\n'
+    s += '<h2><a name="FlaggedItems">Flagged Items</a></h2>\n'
+    s += '<div id="flagged_items">\n'
     for item in items:
         s += item
-    s += "</div>  <!--end flagged_items -->" + "\n"
-    s += "</div>  <!--end flagged_section -->" + "\n"
+    s += "</div>  <!--end flagged_items -->\n"
+    s += "</div>  <!--end flagged_section -->\n"
     return s
 
 
@@ -403,7 +396,7 @@ def get_flagged_items(todo_files):
 
 
 def tagged_item_html(item, row):
-    s = '<div class="tag{0}">{1}'.format(row % 2, "\n")
+    s = '<div class="tag{0}">\n'.format(row % 2)
     s += '<p class="flink"><a href="#{0}">{1}</a></p>{2}'.format(
         as_link_name(item.source_file), item.source_file, "\n"
     )
@@ -413,38 +406,38 @@ def tagged_item_html(item, row):
 
 
 def tags_section(todo_tags):
-    s = '<div id="tags_section">' + "\n"
-    s += '<h2><a name="TaggedItems">Tagged Items</a></h2>' + "\n"
-    s += '<div id="tagged_items">' + "\n"
+    s = '<div id="tags_section">\n'
+    s += '<h2><a name="TaggedItems">Tagged Items</a></h2>\n'
+    s += '<div id="tagged_items">\n'
 
     for tag, items in sorted(todo_tags.items()):
-        s += '<div class="tagheader">' + "\n"
-        s += "<p>Tag: <strong>{0}</strong></p>{1}".format(tag, "\n")
-        s += "</div>" + "\n"
+        s += '<div class="tagheader">\n'
+        s += "<p>Tag: <strong>{0}</strong></p>\n".format(tag)
+        s += "</div>\n"
         row = 0
         for item in items:
             row += 1
             s += tagged_item_html(item, row)
 
-    s += "</div>  <!--end tagged_items -->" + "\n"
-    s += "</div>  <!--end tags_section -->" + "\n"
+    s += "</div>  <!--end tagged_items -->\n"
+    s += "</div>  <!--end tags_section -->\n"
     return s
 
 
 def main_section(todo_files):
-    s = '<div id="main">' + "\n"
-    s += '<h2><a name="Main">Files with To-do Items</a></h2>' + "\n"
+    s = '<div id="main">\n'
+    s += '<h2><a name="Main">Files with To-do Items</a></h2>\n'
     for todo_file in todo_files:
         if len(todo_file.todo_items) > 0:
             s += todo_file_html(todo_file.full_name, todo_file.last_modified)
-            s += '<div class="filecontent">' + "\n"
+            s += '<div class="filecontent">\n'
             row = 0
             for item in todo_file.todo_items:
                 row += 1
-                s += todo_item_html(item, row) + "\n"
-            s += '<p class="toplink">(<a href="#top">top</a>)</p>' + "\n"
-            s += "</div>  <!--end filecontent -->" + "\n\n"
-    s += "</div>  <!--end main -->" + "\n"
+                s += "{0}\n".format(todo_item_html(item, row))
+            s += '<p class="toplink">(<a href="#top">top</a>)</p>\n'
+            s += "</div>  <!--end filecontent -->\n\n"
+    s += "</div>  <!--end main -->\n"
     return s
 
 
@@ -620,16 +613,13 @@ def write_html_output(todo_files, flagged_items, todo_tags):
         f.write('<div id="wrapper">\n')
         f.write('<div id="content">\n')
 
-        # f.write('<h1><a name="top">To-do Items</a></h1>' + "\n")
-
         f.write('<h1><a name="top">{0}</a></h1>\n'.format(args.page_title))
 
-        f.write(
+        f.write("{0}\n".format(
             contents_section(
                 todo_files, (len(flagged_items) > 0), (len(todo_tags) > 0)
             )
-            + "\n"
-        )
+        ))
 
         f.write("{0}\n".format(flagged_items_html(flagged_items)))
 
@@ -637,12 +627,11 @@ def write_html_output(todo_files, flagged_items, todo_tags):
 
         f.write("{0}\n".format(main_section(todo_files)))
 
-        f.write('<div id="footer">' + "\n")
+        f.write('<div id="footer">\n')
         f.write(
-            "Created {0} by todolister.py (version {1}).".format(
+            "Created {0} by todolister.py (version {1}).\n".format(
                 datetime.now().strftime("%Y-%m-%d %H:%M"), app_version
             )
-            + "\n"
         )
         f.write("</div>\n\n")
         f.write("</div>  <!--end content -->\n")
