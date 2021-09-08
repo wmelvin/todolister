@@ -5,7 +5,7 @@
 #
 # 
 #
-# 2021-09-06
+# 2021-09-08
 # ---------------------------------------------------------------------
 
 import argparse
@@ -35,7 +35,7 @@ AppArgs = namedtuple(
     + 'do_text, do_text_dt, nohtml, page_title'
 )
 
-app_version = '210906.1'
+app_version = '210908.1'
 
 pub_version = '1.0.dev1'
 
@@ -92,6 +92,13 @@ def get_matching_files(dir_name, do_recurse):
                 x for x in p.iterdir() if x.is_dir() and not x.is_symlink()
             ]:
                 get_matching_files(d, do_recurse)
+
+    except FileNotFoundError:
+        msg = "ERROR (FileNotFoundError): Cannot scan directory {0}".format(
+            dir_name
+        )
+        print(msg)
+        error_messages.append(msg)
 
     except PermissionError:
         msg = "ERROR (PermissionError): Cannot scan directory {0}".format(
@@ -171,7 +178,8 @@ def get_css_from_file(indent_len):
         for line in lines:
             if len(line.strip()) > 0:
                 css += "{0}{1}".format(indent, line)
-    return f"{css}\n"
+    css += "\n"
+    return css
 
 
 def embed_style():
@@ -807,7 +815,7 @@ def main():
     else:
         p = Path(args_parsed.optfile).expanduser().resolve()
         if not p.exists():
-            raise SystemExit(f"Options file not found: {p}")
+            raise SystemExit("Options file not found: {0}".format(p))
         with open(p, 'r') as f:
             opt_lines = f.readlines()
 
@@ -836,7 +844,7 @@ def main():
     dirs_to_scan = []
     for folder in args.folders:
         folder = str(Path(folder).expanduser().resolve())
-        print(f"Folder {folder}")
+        print("Folder {0}".format(folder))
         if not Path(folder).exists():
             raise SystemExit('Path not found: ' + folder)
         dirs_to_scan.append(ScanProps(folder, args.recurse))
@@ -865,7 +873,7 @@ def main():
     file_list = []
 
     for dir in dirs_to_scan:
-        print(f"Scanning folder [{dir.dir_name}]")
+        print("Scanning folder [{0}]".format(dir.dir_name))
         get_matching_files(dir.dir_name, dir.do_recurse)
 
     if args.mtime:
