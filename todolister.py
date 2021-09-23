@@ -5,11 +5,12 @@
 #
 # 
 #
-# 2021-09-08
+# 2021-09-23
 # ---------------------------------------------------------------------
 
 import argparse
 import re
+import webbrowser
 from collections import namedtuple
 from datetime import datetime
 from pathlib import Path
@@ -27,11 +28,11 @@ TodoFile = namedtuple("TodoFile", "last_modified, full_name, todo_items")
 
 AppArgs = namedtuple(
     "AppArgs",
-    "folders, optfile, recurse, mtime, output_file, "
-    + "do_text, do_text_dt, nohtml, page_title",
+    "folders, optfile, recurse, mtime, output_file, do_text, "
+    + "do_text_dt, no_html, page_title, no_browser",
 )
 
-app_version = "210908.1"
+app_version = "210923.1"
 
 pub_version = "1.0.dev1"
 
@@ -174,8 +175,7 @@ def get_css_from_file(indent_len):
 def embed_style():
     # Changes made in external css file pasted here from html output
     # after running with css_mode = 1.
-    return (
-        """
+    return """
     <style>
         h1 {color: steelblue;}
         h2 {color: slategrey;}
@@ -259,7 +259,6 @@ def embed_style():
         #contents_section h3 {margin-left: 20px;}
         #contents_section ul {margin-left: 20px;}
     </style>"""
-    )
 
 
 #  endregion
@@ -615,11 +614,13 @@ def write_html_output(todo_files, flagged_items, todo_tags):
 
         f.write('<h1><a name="top">{0}</a></h1>\n'.format(args.page_title))
 
-        f.write("{0}\n".format(
-            contents_section(
-                todo_files, (len(flagged_items) > 0), (len(todo_tags) > 0)
+        f.write(
+            "{0}\n".format(
+                contents_section(
+                    todo_files, (len(flagged_items) > 0), (len(todo_tags) > 0)
+                )
             )
-        ))
+        )
 
         f.write("{0}\n".format(flagged_items_html(flagged_items)))
 
@@ -667,6 +668,14 @@ def write_text_output(todo_files, include_datetime):
             dt.strftime("%Y-%m-%d %H:%M"), app_version
         )
         f.write(s)
+
+
+def open_html_output():
+    if not (args.no_browser or args.no_html):
+        url = "file://{0}".format(
+            get_output_filename(args.output_file, None, ".html")
+        )
+        webbrowser.open(url)
 
 
 # ---------------------------------------------------------------------
@@ -788,7 +797,7 @@ def main():
     ap.add_argument(
         "-n",
         "--no-html",
-        dest="nohtml",
+        dest="no_html",
         action="store_true",
         help="Do not create the HTML file output. Use with -t to only create "
         + "a text file output.",
@@ -812,6 +821,14 @@ def main():
         default="ToDo Items",
         action="store",
         help="Title for HTML page (will show in browser tab).",
+    )
+
+    ap.add_argument(
+        "-q",
+        "--no-browser",
+        dest="no_browser",
+        action="store_true",
+        help="Do not try to open the output file in the web browser."
     )
 
     #  endregion
@@ -845,8 +862,9 @@ def main():
         args_parsed.output_file,
         getopt_do_text(args_parsed.do_text, opt_lines),
         getopt_do_text_dt(args_parsed.do_text_dt, opt_lines),
-        getopt_no_html(args_parsed.nohtml, opt_lines),
+        getopt_no_html(args_parsed.no_html, opt_lines),
         getopt_title(args_parsed.page_title, opt_lines),
+        args_parsed.no_browser,
     )
 
     dirs_to_scan = []
@@ -904,7 +922,7 @@ def main():
 
     item_tags = get_item_tags(todo_files)
 
-    if not args.nohtml:
+    if not args.no_html:
         write_html_output(todo_files, flagged_items, item_tags)
 
     if args.do_text or args.do_text_dt:
@@ -915,6 +933,8 @@ def main():
         for msg in error_messages:
             print(msg)
         print("")
+
+    open_html_output()
 
     print("Done (todolister.py - version {0}).".format(app_version))
 
