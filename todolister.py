@@ -10,6 +10,7 @@
 
 import argparse
 import re
+import sys
 import webbrowser
 from collections import namedtuple
 from datetime import datetime
@@ -26,13 +27,14 @@ TodoItem = namedtuple(
 
 TodoFile = namedtuple("TodoFile", "last_modified, full_name, todo_items")
 
-AppArgs = namedtuple(
-    "AppArgs",
+AppOptions = namedtuple(
+    "AppOptions",
     "folders, optfile, recurse, mtime, output_file, do_text, "
-    + "do_text_dt, no_html, page_title, no_browser",
+    + "do_text_dt, no_html, page_title, no_browser, "
+    + "dirs_to_scan, dirs_to_exclude, file_specs",
 )
 
-app_version = "210923.1"
+app_version = "211016.1"
 
 pub_version = "1.0.dev1"
 
@@ -56,30 +58,30 @@ css_file_name = str(Path.cwd() / "style.css")
 default_output_file = str(Path.cwd() / "from-todolister.html")
 
 
-def matches_filespec(file_name):
+def matches_filespec(file_name, file_specs):
     for spec in file_specs:
         if re.search(spec.lower(), file_name.lower()):
             return True
     return False
 
 
-def exclude_dir(dir_name):
+def exclude_dir(dir_name, dirs_to_exclude):
     return any(dir_name == dir for dir in dirs_to_exclude)
 
 
 # TODO: Is simple string match good enough?
 
 
-def get_matching_files(dir_name, do_recurse):
+def get_matching_files(dir_name, do_recurse, opt: AppOptions):
     p = Path(dir_name).resolve()
 
-    if exclude_dir(str(p)):
+    if exclude_dir(str(p), opt.dirs_to_exclude):
         print("  Exclude [{0}]".format(str(p)))
         return
 
     try:
         for f in [x for x in p.iterdir() if x.is_file()]:
-            if matches_filespec(f.name):
+            if matches_filespec(f.name, opt.file_specs):
                 ts = datetime.fromtimestamp(f.stat().st_mtime)
                 file_list.append(
                     FileInfo(ts.strftime("%Y-%m-%d %H:%M"), str(f))
@@ -89,7 +91,7 @@ def get_matching_files(dir_name, do_recurse):
             for d in [
                 x for x in p.iterdir() if x.is_dir() and not x.is_symlink()
             ]:
-                get_matching_files(d, do_recurse)
+                get_matching_files(d, do_recurse, opt)
 
     except FileNotFoundError:
         msg = "ERROR (FileNotFoundError): Cannot scan directory {0}".format(
@@ -578,7 +580,7 @@ def getopt_dirs_to_exclude(default_dirs, opt_content):
         return dirs
 
 
-def get_output_filename(args_filename, date_time, desired_suffix):
+def get_output_filename(args_filename, date_time, desired_suffix, file_specs):
     p = Path(args_filename).expanduser().resolve()
 
     if date_time is not None:
@@ -593,7 +595,7 @@ def get_output_filename(args_filename, date_time, desired_suffix):
     else:
         s = str(p.with_suffix(desired_suffix))
 
-    if matches_filespec(Path(s).name):
+    if matches_filespec(Path(s).name, file_specs):
         print(
             "\nWARNING: Output file name matches a specification "
             + "for files to be scanned. Its contents will be "
@@ -604,15 +606,17 @@ def get_output_filename(args_filename, date_time, desired_suffix):
     return s
 
 
-def write_html_output(todo_files, flagged_items, todo_tags):
-    out_file_name = get_output_filename(args.output_file, None, ".html")
+def write_html_output(todo_files, flagged_items, todo_tags, opt: AppOptions):
+    out_file_name = get_output_filename(
+        opt.output_file, None, ".html", opt.file_specs
+    )
     print("Writing file [{0}].".format(out_file_name))
     with open(out_file_name, "w") as f:
-        f.write("{0}\n".format(html_head(args.page_title)))
+        f.write("{0}\n".format(html_head(opt.page_title)))
         f.write('<div id="wrapper">\n')
         f.write('<div id="content">\n')
 
-        f.write('<h1><a name="top">{0}</a></h1>\n'.format(args.page_title))
+        f.write('<h1><a name="top">{0}</a></h1>\n'.format(opt.page_title))
 
         f.write(
             "{0}\n".format(
@@ -640,15 +644,19 @@ def write_html_output(todo_files, flagged_items, todo_tags):
         f.write(html_tail())
 
 
-def write_text_output(todo_files, include_datetime):
+def write_text_output(todo_files, include_datetime, opt: AppOptions):
     sep = "-" * 70
 
     dt = datetime.now()
 
     if include_datetime:
-        out_file_name = get_output_filename(args.output_file, dt, ".txt")
+        out_file_name = get_output_filename(
+            opt.output_file, dt, ".txt", opt.file_specs
+        )
     else:
-        out_file_name = get_output_filename(args.output_file, None, ".txt")
+        out_file_name = get_output_filename(
+            opt.output_file, None, ".txt", opt.file_specs
+        )
 
     print("Writing file [{0}].".format(out_file_name))
 
@@ -670,10 +678,10 @@ def write_text_output(todo_files, include_datetime):
         f.write(s)
 
 
-def open_html_output():
-    if not (args.no_browser or args.no_html):
+def open_html_output(opt: AppOptions):
+    if not (opt.no_browser or opt.no_html):
         url = "file://{0}".format(
-            get_output_filename(args.output_file, None, ".html")
+            get_output_filename(opt.output_file, None, ".html", opt.file_specs)
         )
         webbrowser.open(url)
 
@@ -716,23 +724,14 @@ def get_item_tags(todo_files):
 
 # ---------------------------------------------------------------------
 
-
-def main():
-
-    print("Running todolister.py (version {0}).".format(app_version))
-
-    global error_messages
-    error_messages = []
-
-    #  region -- define arguments
-
-    #  Note: Using the term 'folder' instead of 'directory' in argument
-    #  descriptions.
-
+def get_args(argv):
     ap = argparse.ArgumentParser(
         description="Read text files containing to-do markers and create a "
         + "HTML report."
     )
+
+    #  Note: Using the term 'folder' instead of 'directory' in argument
+    #  descriptions.
 
     ap.add_argument(
         "folders",
@@ -828,12 +827,14 @@ def main():
         "--no-browser",
         dest="no_browser",
         action="store_true",
-        help="Do not try to open the output file in the web browser."
+        help="Do not try to open the output file in the web browser.",
     )
 
-    #  endregion
+    return ap.parse_args(argv[1:])
 
-    args_parsed = ap.parse_args()
+
+def get_options(argv):
+    args_parsed = get_args(argv)
 
     if args_parsed.optfile is None:
         opt_lines = []
@@ -851,10 +852,26 @@ def main():
             default_output_file, opt_lines
         )
 
-    #  Put application arguments into a named tuple so they are immutable
-    #  from this point.
-    global args
-    args = AppArgs(
+    dirs_to_scan = []
+    for folder in args_parsed.folders:
+        folder = str(Path(folder).expanduser().resolve())
+        print("Folder {0}".format(folder))
+        if not Path(folder).exists():
+            raise SystemExit("Path not found: " + folder)
+        dirs_to_scan.append(ScanProps(folder, args_parsed.recurse))
+
+    dirs_to_scan = getopt_dirs_to_scan(dirs_to_scan, opt_lines)
+
+    dirs_to_exclude = []
+    for excluded in args_parsed.exclude_path.strip("'\"").split(";"):
+        if len(excluded) > 0:
+            dirs_to_exclude.append(str(Path(excluded).expanduser().resolve()))
+
+    dirs_to_exclude = getopt_dirs_to_exclude(dirs_to_exclude, opt_lines)
+
+    file_specs = getopt_filespecs(default_file_specs, opt_lines)
+
+    result = AppOptions(
         args_parsed.folders,
         args_parsed.optfile,
         args_parsed.recurse,
@@ -865,44 +882,35 @@ def main():
         getopt_no_html(args_parsed.no_html, opt_lines),
         getopt_title(args_parsed.page_title, opt_lines),
         args_parsed.no_browser,
+        dirs_to_scan,
+        dirs_to_exclude,
+        file_specs,
     )
 
-    dirs_to_scan = []
-    for folder in args.folders:
-        folder = str(Path(folder).expanduser().resolve())
-        print("Folder {0}".format(folder))
-        if not Path(folder).exists():
-            raise SystemExit("Path not found: " + folder)
-        dirs_to_scan.append(ScanProps(folder, args.recurse))
+    return result
 
-    global dirs_to_exclude
-    dirs_to_exclude = []
-    for excluded in args_parsed.exclude_path.strip("'\"").split(";"):
-        if len(excluded) > 0:
-            dirs_to_exclude.append(str(Path(excluded).expanduser().resolve()))
 
-    dirs_to_exclude = getopt_dirs_to_exclude(dirs_to_exclude, opt_lines)
+def main(argv):
+    print("Running todolister.py (version {0}).".format(app_version))
 
-    global file_specs
-    file_specs = getopt_filespecs(default_file_specs, opt_lines)
+    global error_messages
+    error_messages = []
 
-    dirs_to_scan = getopt_dirs_to_scan(dirs_to_scan, opt_lines)
+    opts = get_options(argv)
 
-    assert args.output_file is not None
+    assert opts.output_file is not None
 
     if debug_stop_after_args:
         raise SystemExit("STOPPED")
 
-    # ---------------------------------------------------------------------
-
     global file_list
     file_list = []
 
-    for dir in dirs_to_scan:
+    for dir in opts.dirs_to_scan:
         print("Scanning folder [{0}]".format(dir.dir_name))
-        get_matching_files(dir.dir_name, dir.do_recurse)
+        get_matching_files(dir.dir_name, dir.do_recurse, opts)
 
-    if args.mtime:
+    if opts.mtime:
         # The last_modified field is the default for sort.
         file_list.sort()
         file_list.reverse()
@@ -922,11 +930,11 @@ def main():
 
     item_tags = get_item_tags(todo_files)
 
-    if not args.no_html:
-        write_html_output(todo_files, flagged_items, item_tags)
+    if not opts.no_html:
+        write_html_output(todo_files, flagged_items, item_tags, opts)
 
-    if args.do_text or args.do_text_dt:
-        write_text_output(todo_files, args.do_text_dt)
+    if opts.do_text or opts.do_text_dt:
+        write_text_output(todo_files, opts.do_text_dt)
 
     if 0 < len(error_messages):
         print("\nThere were errors!")
@@ -934,10 +942,12 @@ def main():
             print(msg)
         print("")
 
-    open_html_output()
+    open_html_output(opts)
 
     print("Done (todolister.py - version {0}).".format(app_version))
 
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main(sys.argv))
