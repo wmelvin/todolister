@@ -54,9 +54,16 @@ css_file_name = str(Path.cwd() / "style.css")
 
 default_output_file = str(Path.cwd() / "from-todolister.html")
 
+run_dt = datetime.now()
+
 file_specs = []
 dirs_to_scan = []
 dirs_to_exclude = []
+file_list = []
+error_messages = []
+todo_files = []
+flagged_items = []
+item_tags = {}
 
 
 def matches_filespec(file_name):
@@ -71,6 +78,10 @@ def exclude_dir(dir_name):
 
 
 # TODO: Is simple string match good enough?
+
+
+# def get_file_specs():
+#     return file_specs
 
 
 def get_matching_files(dir_name, do_recurse):
@@ -341,7 +352,7 @@ def contents_section(todo_files, any_flags, any_tags):
     s = '<div id="contents_section">\n'
     s += "<h2>Contents</h2>\n"
 
-    s += "<h3>Sections</h2>\n"
+    s += "<h3>Sections</h3>\n"
     s += "<ul>\n"
     if any_flags:
         s += '<li><a href="#FlaggedItems">Flagged Items</a></li>\n'
@@ -350,7 +361,7 @@ def contents_section(todo_files, any_flags, any_tags):
     s += '<li><a href="#Main">Files with To-do Items</a></li>\n'
     s += "</ul>\n"
 
-    s += "<h3>Files</h2>\n"
+    s += "<h3>Files</h3>\n"
     s += "<ul>\n"
     for todo_file in todo_files:
         if len(todo_file.todo_items) > 0:
@@ -385,8 +396,7 @@ def flagged_items_html(items):
     return s
 
 
-def get_flagged_items(todo_files):
-    flagged_items = []
+def get_flagged_items():
     row = 0
     for todo_file in todo_files:
         if len(todo_file.todo_items) > 0:
@@ -394,7 +404,6 @@ def get_flagged_items(todo_files):
                 if item.is_flagged:
                     row += 1
                     flagged_items.append(flagged_item_html(item, row))
-    return flagged_items
 
 
 def tagged_item_html(item, row):
@@ -603,7 +612,7 @@ def get_output_filename(args_filename, date_time, desired_suffix):
     return s
 
 
-def get_html_output(todo_files, flagged_items, todo_tags, page_title):
+def get_html_output(page_title):
     s = "{0}\n".format(html_head(page_title))
     s += '<div id="wrapper">\n'
     s += '<div id="content">\n'
@@ -612,19 +621,19 @@ def get_html_output(todo_files, flagged_items, todo_tags, page_title):
 
     s += "{0}\n".format(
         contents_section(
-            todo_files, (len(flagged_items) > 0), (len(todo_tags) > 0)
+            todo_files, (len(flagged_items) > 0), (len(item_tags) > 0)
         )
     )
 
     s += "{0}\n".format(flagged_items_html(flagged_items))
 
-    s += "{0}\n".format(tags_section(todo_tags))
+    s += "{0}\n".format(tags_section(item_tags))
 
     s += "{0}\n".format(main_section(todo_files))
 
     s += '<div id="footer">\n'
     s += "Created {0} by todolister.py (version {1}).\n".format(
-        datetime.now().strftime("%Y-%m-%d %H:%M"), app_version
+        run_dt.strftime("%Y-%m-%d %H:%M"), app_version
     )
 
     s += "</div>\n\n"
@@ -634,18 +643,18 @@ def get_html_output(todo_files, flagged_items, todo_tags, page_title):
     return s
 
 
-def write_html_output(todo_files, flagged_items, todo_tags, opt):
+def write_html_output(opt):
     out_file_name = get_output_filename(opt.output_file, None, ".html")
     print("Writing file [{0}].".format(out_file_name))
     with open(out_file_name, "w") as f:
         f.write(
             get_html_output(
-                todo_files, flagged_items, todo_tags, opt.page_title
+                opt.page_title
             )
         )
 
 
-def get_text_output(todo_files, run_dt):
+def get_text_output():
     sep = "-" * 70
     text = "Gathered ToDo Items\n"
     for todo_file in todo_files:
@@ -664,9 +673,7 @@ def get_text_output(todo_files, run_dt):
     return text
 
 
-def write_text_output(todo_files, opt):
-    run_dt = datetime.now()
-
+def write_text_output(opt):
     if opt.do_text_dt:
         out_file_name = get_output_filename(opt.output_file, run_dt, ".txt")
     else:
@@ -675,7 +682,7 @@ def write_text_output(todo_files, opt):
     print("Writing file [{0}].".format(out_file_name))
 
     with open(out_file_name, "w") as f:
-        f.write(get_text_output(todo_files, run_dt))
+        f.write(get_text_output())
 
 
 def open_html_output(opt):
@@ -705,8 +712,7 @@ def prune(text):
     return s
 
 
-def get_item_tags(todo_files):
-    tags = {}
+def get_item_tags():
     for todo_file in todo_files:
         if len(todo_file.todo_items) > 0:
             for item in todo_file.todo_items:
@@ -715,11 +721,10 @@ def get_item_tags(todo_files):
                 wurdz = s.split(" ")
                 for wurd in wurdz:
                     if len(wurd) > 1 and wurd.startswith("#"):
-                        if wurd in tags.keys():
-                            tags[wurd].append(item)
+                        if wurd in item_tags.keys():
+                            item_tags[wurd].append(item)
                         else:
-                            tags[wurd] = [item]
-    return tags
+                            item_tags[wurd] = [item]
 
 
 # ---------------------------------------------------------------------
@@ -889,18 +894,12 @@ def get_options(argv):
 def main(argv):
     print("Running todolister.py (version {0}).".format(app_version))
 
-    global error_messages
-    error_messages = []
-
     opts = get_options(argv)
 
     assert opts.output_file is not None
 
     if debug_stop_after_args:
         raise SystemExit("STOPPED")
-
-    global file_list
-    file_list = []
 
     for dir in dirs_to_scan:
         print("Scanning folder [{0}]".format(dir.dir_name))
@@ -913,8 +912,6 @@ def main(argv):
     else:
         file_list.sort(key=lambda item: item.full_name.lower())
 
-    todo_files = []
-
     for file_info in file_list:
         print("Reading file [{0}]".format(file_info.full_name))
         items = get_todo_items(file_info.full_name)
@@ -922,15 +919,15 @@ def main(argv):
             TodoFile(file_info.last_modified, file_info.full_name, items)
         )
 
-    flagged_items = get_flagged_items(todo_files)
+    get_flagged_items()
 
-    item_tags = get_item_tags(todo_files)
+    get_item_tags()
 
     if not opts.no_html:
-        write_html_output(todo_files, flagged_items, item_tags, opts)
+        write_html_output(opts)
 
     if opts.do_text or opts.do_text_dt:
-        write_text_output(todo_files, opts)
+        write_text_output(opts)
 
     if 0 < len(error_messages):
         print("\nThere were errors!")
