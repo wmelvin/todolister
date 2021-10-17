@@ -603,73 +603,82 @@ def get_output_filename(args_filename, date_time, desired_suffix):
     return s
 
 
-def write_html_output(todo_files, flagged_items, todo_tags, opt: AppOptions):
+def get_html_output(todo_files, flagged_items, todo_tags, page_title):
+    s = "{0}\n".format(html_head(page_title))
+    s += '<div id="wrapper">\n'
+    s += '<div id="content">\n'
+
+    s += '<h1><a name="top">{0}</a></h1>\n'.format(page_title)
+
+    s += "{0}\n".format(
+        contents_section(
+            todo_files, (len(flagged_items) > 0), (len(todo_tags) > 0)
+        )
+    )
+
+    s += "{0}\n".format(flagged_items_html(flagged_items))
+
+    s += "{0}\n".format(tags_section(todo_tags))
+
+    s += "{0}\n".format(main_section(todo_files))
+
+    s += '<div id="footer">\n'
+    s += "Created {0} by todolister.py (version {1}).\n".format(
+        datetime.now().strftime("%Y-%m-%d %H:%M"), app_version
+    )
+
+    s += "</div>\n\n"
+    s += "</div>  <!--end content -->\n"
+    s += "</div>  <!--end wrapper -->\n"
+    s += html_tail()
+    return s
+
+
+def write_html_output(todo_files, flagged_items, todo_tags, opt):
     out_file_name = get_output_filename(opt.output_file, None, ".html")
     print("Writing file [{0}].".format(out_file_name))
     with open(out_file_name, "w") as f:
-        f.write("{0}\n".format(html_head(opt.page_title)))
-        f.write('<div id="wrapper">\n')
-        f.write('<div id="content">\n')
-
-        f.write('<h1><a name="top">{0}</a></h1>\n'.format(opt.page_title))
-
         f.write(
-            "{0}\n".format(
-                contents_section(
-                    todo_files, (len(flagged_items) > 0), (len(todo_tags) > 0)
-                )
+            get_html_output(
+                todo_files, flagged_items, todo_tags, opt.page_title
             )
         )
 
-        f.write("{0}\n".format(flagged_items_html(flagged_items)))
 
-        f.write("{0}\n".format(tags_section(todo_tags)))
-
-        f.write("{0}\n".format(main_section(todo_files)))
-
-        f.write('<div id="footer">\n')
-        f.write(
-            "Created {0} by todolister.py (version {1}).\n".format(
-                datetime.now().strftime("%Y-%m-%d %H:%M"), app_version
-            )
-        )
-        f.write("</div>\n\n")
-        f.write("</div>  <!--end content -->\n")
-        f.write("</div>  <!--end wrapper -->\n")
-        f.write(html_tail())
-
-
-def write_text_output(todo_files, opt: AppOptions):
+def get_text_output(todo_files, run_dt):
     sep = "-" * 70
+    text = "Gathered ToDo Items\n"
+    for todo_file in todo_files:
+        if len(todo_file.todo_items) > 0:
+            s = sep + "\n"
+            s += todo_file.full_name + "\n"
+            s += "  ({0})\n\n".format(todo_file.last_modified)
+            for item in todo_file.todo_items:
+                s += item.item_text + "\n"
+            s += "\n"
+            text += s
+    text += sep + "\n"
+    text += "Created {0} by todolister.py (version {1}).\n".format(
+        run_dt.strftime("%Y-%m-%d %H:%M"), app_version
+    )
+    return text
 
-    dt = datetime.now()
+
+def write_text_output(todo_files, opt):
+    run_dt = datetime.now()
 
     if opt.do_text_dt:
-        out_file_name = get_output_filename(opt.output_file, dt, ".txt")
+        out_file_name = get_output_filename(opt.output_file, run_dt, ".txt")
     else:
         out_file_name = get_output_filename(opt.output_file, None, ".txt")
 
     print("Writing file [{0}].".format(out_file_name))
 
     with open(out_file_name, "w") as f:
-        f.write("Gathered ToDo Items\n")
-        for todo_file in todo_files:
-            if len(todo_file.todo_items) > 0:
-                s = sep + "\n"
-                s += todo_file.full_name + "\n"
-                s += "  ({0})\n\n".format(todo_file.last_modified)
-                for item in todo_file.todo_items:
-                    s += item.item_text + "\n"
-                s += "\n"
-                f.write(s)
-        f.write(sep + "\n")
-        s = "Created {0} by todolister.py (version {1}).\n".format(
-            dt.strftime("%Y-%m-%d %H:%M"), app_version
-        )
-        f.write(s)
+        f.write(get_text_output(todo_files, run_dt))
 
 
-def open_html_output(opt: AppOptions):
+def open_html_output(opt):
     if not (opt.no_browser or opt.no_html):
         url = "file://{0}".format(
             get_output_filename(opt.output_file, None, ".html")
