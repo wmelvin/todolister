@@ -1,3 +1,13 @@
+"""
+Tests for todolister.py.
+
+TDD was not used in creating todolister.py.  These tests were added after
+there was a working version.  Most, if not all, of these tests are functional
+tests rather than unit tests.
+
+"""
+
+from importlib import reload
 import html5lib
 import pytest
 import textwrap
@@ -225,7 +235,11 @@ def write_wonotest_txt(dir_path):
 
 @pytest.fixture(scope="module")
 def todo_files_dir(tmp_path_factory):
-    p = tmp_path_factory.mktemp("todo")
+    """
+    Makes a temporary directory and populates it with test files.
+    Returns the pathlib.Path object for that directory.
+    """
+    p = tmp_path_factory.mktemp("testdata")
     write_notes_txt(p)
     write_notthis_txt(p)
     write_notthisdir_notes_txt(p)
@@ -241,51 +255,178 @@ def todo_files_dir(tmp_path_factory):
     return p
 
 
-def todolister_args_1(dir_path):
-    excl_dir = dir_path / "NotThisDir"
-    return [
+def test_runs_and_fills_lists(todo_files_dir):
+    reload(todolister)
+    assert len(todolister.file_list) == 0
+
+    d = todo_files_dir
+    excl_dir = str(d / "NotThisDir")
+    args = [
         "todolister.py",
-        str(dir_path),
+        str(d),
         "--recurse",
         "-x",
-        str(excl_dir),
+        excl_dir,
+        "--output-file",
+        "from-test_runs_and_fills_lists",
     ]
-
-
-# def test_todolister_1(todo_files_dir):
-#     args = todolister_args_1(todo_files_dir)
-
-#     args.append("--no-browser")
-
-#     result = todolister.main(args)
-#     assert result == 0
-
-
-def test_runs_and_fills_lists(todo_files_dir):
-    args = todolister_args_1(todo_files_dir)
     args.append("--no-browser")
 
     result = todolister.main(args)
     assert result == 0
 
     assert 0 < len(todolister.file_specs)
-
     assert len(todolister.file_specs) == len(todolister.default_file_specs)
-
     assert len(todolister.dirs_to_scan) == 1
+    expected_n_files = 8
+    assert len(todolister.file_list) == expected_n_files
+    assert len(todolister.todo_files) == expected_n_files
+    assert 0 < len(todolister.flagged_items)
+    assert 0 < len(todolister.item_tags)
 
-    assert len(todolister.file_list) == 8
 
-    assert len(todolister.todo_files) == 8
-
-
-def test_html(todo_files_dir):
-    args = ["todolister.py", str(todo_files_dir)]
-    args.append("--no-browser")
+def test_no_recurse(todo_files_dir):
+    reload(todolister)
+    assert len(todolister.file_list) == 0
+    d = todo_files_dir
+    args = [
+        "todolister.py",
+        str(d),
+        "--no-browser",
+        "--output-file",
+        "from-test_no_recurse",
+    ]
     result = todolister.main(args)
     assert result == 0
-    html = todolister.get_html_output("TEST TITLE")
+    n_files_not_in_subdir = 7
+    assert len(todolister.file_list) == n_files_not_in_subdir
+
+
+def test_html_output_is_parsable(todo_files_dir):
+    reload(todolister)
+    assert len(todolister.file_list) == 0
+    args = [
+        "todolister.py",
+        str(todo_files_dir),
+        "--no-browser",
+        "--output-file",
+        "from-test_html_output_is_parsable",
+    ]
+    result = todolister.main(args)
+    assert result == 0
+    html = todolister.get_html_output("TEST")
     parser = html5lib.HTMLParser(strict=True)
     document = parser.parse(html)
     check = document.findall(".//*[@name='Main']")
     assert len(check) == 1
+
+
+def test_file_permission_error(tmp_path):
+    reload(todolister)
+    assert len(todolister.file_list) == 0
+
+    d = tmp_path / "testerr"
+    d.mkdir()
+    #  Create a test file.
+    p = d / "notes.txt"
+    p.write_text(
+        textwrap.dedent(
+            """
+            [ ] This notes.txt should have its read permission removed
+                to cause an exception.
+            """
+        )
+    )
+    assert p.exists()
+    #  Remove read permission.
+    p.chmod(0o220)
+
+    #  Run test.
+    args = [
+        "todolister.py",
+        str(d),
+        "--no-browser",
+        "--output-file",
+        "from-test_file_permission_error",
+    ]
+    result = todolister.main(args)
+    assert result == 0
+
+    assert 0 < len(todolister.error_messages)
+
+    html = todolister.get_html_output("TEST")
+    assert "ERROR (PermissionError):" in html
+
+
+def get_pre_text(element, id):
+    """
+    Use XPath expressions to get text from the <pre> tag elements inside
+    an element, such as a <div>, with the given id.
+    """
+    ns = "{http://www.w3.org/1999/xhtml}"
+    pre_qry = f".//*{ns}pre"
+    result = []
+    a = element.find(f'.//*[@id="{id}"]')
+    if a is not None:
+        b = a.findall(pre_qry)
+        if b is not None:
+            for e in b:
+                result.append(e.text)
+    return result
+
+
+def test_html_details(tmp_path):
+    reload(todolister)
+    assert len(todolister.file_list) == 0
+
+    d = tmp_path / "testdata2"
+    d.mkdir()
+    #  Create a test file.
+    p = d / "notes.txt"
+    p.write_text(
+        textwrap.dedent(
+            """
+            [ ] Item from notes.txt in testdata2.
+                One more line
+                And another line
+
+            [ ]* A flagged item.
+
+            [ ]* Another flagged item.
+
+            [ ] An item with a #hashtag.
+
+            [ ] Another item with the same #hashtag.
+
+            Text after to-do (should not be shown).
+
+            #extrahash (should not be shown)
+            """
+        )
+    )
+    assert p.exists()
+    #  Run test.
+    args = [
+        "todolister.py",
+        str(d),
+        "--no-browser",
+        "--output-file",
+        "from-test_html_details",
+    ]
+    result = todolister.main(args)
+    assert result == 0
+
+    html = todolister.get_html_output("TEST")
+
+    doc = html5lib.parse(html)
+
+    flagged_items = get_pre_text(doc, "flagged_items")
+    assert len(flagged_items) == 2
+
+    tagged_items = get_pre_text(doc, "tagged_items")
+    assert len(tagged_items) == 2
+
+    main_items = get_pre_text(doc, "main")
+    assert len(main_items) == 5
+
+    assert "(should not be shown)" not in html
