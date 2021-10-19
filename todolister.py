@@ -742,7 +742,6 @@ def get_args(argv):
     ap.add_argument(
         "folders",
         nargs="*",
-        default=[str(Path.cwd())],
         action="store",
         help="Folder(s) to scan. Multiple folders can be specified.",
     )
@@ -866,6 +865,11 @@ def get_options(argv):
         dirs_to_scan.append(ScanProps(folder, args_parsed.recurse))
 
     getopt_dirs_to_scan(opt_lines)
+
+    #  If no directories were specified in the arguments or options file
+    #  then only scan the current directory.
+    if len(dirs_to_scan) == 0:
+        dirs_to_scan.append(ScanProps(str(Path.cwd()), False))
 
     for excluded in args_parsed.exclude_path.strip("'\"").split(";"):
         if len(excluded) > 0:
