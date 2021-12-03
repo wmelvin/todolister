@@ -7,10 +7,12 @@ tests rather than unit tests.
 
 """
 
-from importlib import reload
 import html5lib
 import pytest
 import textwrap
+
+from importlib import reload
+from pathlib import Path
 
 import todolister
 
@@ -261,16 +263,19 @@ def test_runs_and_fills_lists(todo_files_dir):
 
     d = todo_files_dir
     excl_dir = str(d / "NotThisDir")
+
     args = [
         "todolister.py",
         str(d),
         "--recurse",
         "-x",
         excl_dir,
+        "--page-title",
+        "test_runs_and_fills_lists",
+        "--no-browser",
         "--output-file",
-        "from-test_runs_and_fills_lists",
+        "./output_t/from-test_runs_and_fills_lists",
     ]
-    args.append("--no-browser")
 
     result = todolister.main(args)
     assert result == 0
@@ -292,9 +297,11 @@ def test_no_recurse(todo_files_dir):
     args = [
         "todolister.py",
         str(d),
+        "--page-title",
+        "test_no_recurse",
         "--no-browser",
         "--output-file",
-        "from-test_no_recurse",
+        "./output_t/from-test_no_recurse",
     ]
     result = todolister.main(args)
     assert result == 0
@@ -309,8 +316,10 @@ def test_html_output_is_parsable(todo_files_dir):
         "todolister.py",
         str(todo_files_dir),
         "--no-browser",
+        "--page-title",
+        "test_html_output_is_parsable",
         "--output-file",
-        "from-test_html_output_is_parsable",
+        "./output_t/from-test_html_output_is_parsable",
     ]
     result = todolister.main(args)
     assert result == 0
@@ -346,15 +355,17 @@ def test_file_permission_error(tmp_path):
         "todolister.py",
         str(d),
         "--no-browser",
+        "--page-title",
+        "test_file_permission_error",
         "--output-file",
-        "from-test_file_permission_error",
+        "./output_t/from-test_file_permission_error",
     ]
     result = todolister.main(args)
     assert result == 0
 
     assert 0 < len(todolister.error_messages)
 
-    html = todolister.get_html_output("TEST")
+    html = todolister.get_html_output("test_file_permission_error")
     assert "ERROR (PermissionError):" in html
 
 
@@ -379,11 +390,11 @@ def test_html_details(tmp_path):
     reload(todolister)
     assert len(todolister.file_list) == 0
 
-    d = tmp_path / "testdata2"
-    d.mkdir()
+    test_dir = tmp_path / "testdata2"
+    test_dir.mkdir()
     #  Create a test file.
-    p = d / "notes.txt"
-    p.write_text(
+    test_file = test_dir / "notes.txt"
+    test_file.write_text(
         textwrap.dedent(
             """
             [ ] Item from notes.txt in testdata2.
@@ -404,14 +415,16 @@ def test_html_details(tmp_path):
             """
         )
     )
-    assert p.exists()
+    assert test_file.exists()
     #  Run test.
     args = [
         "todolister.py",
-        str(d),
+        str(test_dir),
         "--no-browser",
+        "--page-title",
+        "test_html_details",
         "--output-file",
-        "from-test_html_details",
+        "./output_t/from-test_html_details",
     ]
     result = todolister.main(args)
     assert result == 0
@@ -430,3 +443,40 @@ def test_html_details(tmp_path):
     assert len(main_items) == 5
 
     assert "(should not be shown)" not in html
+
+
+def test_creates_text_output(tmp_path):
+    reload(todolister)
+    assert len(todolister.file_list) == 0
+
+    test_dir = tmp_path / "testdata3"
+    test_dir.mkdir()
+    #  Create a test file.
+    test_file = test_dir / "notes.txt"
+    test_file.write_text(
+        textwrap.dedent(
+            """
+            [ ] Item from notes.txt in testdata3.
+            """
+        )
+    )
+    assert test_file.exists()
+
+    wo_suffix = "./output_t/from-test_creates_text_output"
+
+    #  Run test.
+    args = [
+        "todolister.py",
+        str(test_dir),
+        "--no-browser",
+        "--page-title",
+        "test_creates_text_output",
+        "--output-file",
+        wo_suffix,
+        "-t"
+    ]
+    result = todolister.main(args)
+    assert result == 0
+
+    assert Path(wo_suffix).with_suffix(".html").exists()
+    assert Path(wo_suffix).with_suffix(".txt").exists()
