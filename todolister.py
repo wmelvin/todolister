@@ -10,6 +10,7 @@ import argparse
 import re
 import sys
 import webbrowser
+
 from collections import namedtuple
 from datetime import datetime
 from pathlib import Path
@@ -31,7 +32,7 @@ AppOptions = namedtuple(
     + "do_text_dt, no_html, page_title, no_browser",
 )
 
-app_version = "211017.1"
+app_version = "211203.1"
 
 pub_version = "1.0.dev1"
 
@@ -76,12 +77,7 @@ def matches_filespec(file_name):
 def exclude_dir(dir_name):
     return any(dir_name == dir for dir in dirs_to_exclude)
 
-
 # TODO: Is simple string match good enough?
-
-
-# def get_file_specs():
-#     return file_specs
 
 
 def get_matching_files(dir_name, do_recurse):
@@ -155,12 +151,13 @@ def get_todo_items(file_name):
                         is_elevated = stripped.startswith("[ ]+")
                         todo_text += line
 
-            # Save last item, in case there were no blank lines at the
-            # end of the file.
+            #  Save last item, in case there were no blank lines at the
+            #  end of the file.
             if len(todo_text) > 0:
                 todo_items.append(
                     TodoItem(is_flagged, is_elevated, todo_text, file_name)
                 )
+
     except PermissionError:
         msg = "ERROR (PermissionError): Cannot read {0}".format(file_name)
         print(msg)
@@ -277,7 +274,6 @@ def embed_style():
 
 #  endregion
 
-
 # ---------------------------------------------------------------------
 
 
@@ -312,11 +308,9 @@ def html_tail():
 
 
 def todo_file_html(file_name, last_modified):
-    s = '<div class="fileheader">\n'
-    s += '  <p class="filename"><a name="{0}">{1}</a></p>\n'.format(
-        as_link_name(file_name), file_name
-    )
-    s += '  <p class="filetime">Modified {0}</p>\n'.format(last_modified)
+    s = '<div class="fileheader" id="{}">\n'.format(as_link_name(file_name))
+    s += '  <p class="filename"><a>{}</a></p>\n'.format(file_name)
+    s += '  <p class="filetime">Modified {}</p>\n'.format(last_modified)
     s += "</div>\n"
     return s
 
@@ -354,20 +348,26 @@ def contents_section(todo_files, any_flags, any_tags):
 
     s += "<h3>Sections</h3>\n"
     s += "<ul>\n"
+
     if any_flags:
-        s += '<li><a href="#FlaggedItems">Flagged Items</a></li>\n'
+        s += '<li><a href="#flagged_section">Flagged Items</a></li>\n'
+
     if any_tags:
-        s += '<li><a href="#TaggedItems">Tagged Items</a></li>\n'
-    s += '<li><a href="#Main">Files with To-do Items</a></li>\n'
+        s += '<li><a href="#tags_section">Tagged Items</a></li>\n'
+
+    s += '<li><a href="#main">Files with To-do Items</a></li>\n'
+
     s += "</ul>\n"
 
     s += "<h3>Files</h3>\n"
     s += "<ul>\n"
+
     for todo_file in todo_files:
         if len(todo_file.todo_items) > 0:
             s += '<li class="flink"><a href="#{0}">{1}</a></li>{2}'.format(
                 as_link_name(todo_file.full_name), todo_file.full_name, "\n"
             )
+
     s += "</ul>\n"
     s += "</div>  <!--end contents_section -->\n"
     return s
@@ -387,7 +387,7 @@ def flagged_items_html(items):
     if len(items) == 0:
         return ""
     s = '<div id="flagged_section">\n'
-    s += '<h2><a name="FlaggedItems">Flagged Items</a></h2>\n'
+    s += '<h2><a>Flagged Items</a></h2>\n'
     s += '<div id="flagged_items">\n'
     for item in items:
         s += item
@@ -417,17 +417,18 @@ def tagged_item_html(item, row):
 
 
 def tags_section(todo_tags):
+    if len(todo_tags) == 0:
+        return
     s = '<div id="tags_section">\n'
-    s += '<h2><a name="TaggedItems">Tagged Items</a></h2>\n'
+    s += '<h2><a>Tagged Items</a></h2>\n'
     s += '<div id="tagged_items">\n'
 
     for tag, items in sorted(todo_tags.items()):
         s += '<div class="tagheader">\n'
         s += "<p>Tag: <strong>{0}</strong></p>\n".format(tag)
         s += "</div>\n"
-        row = 0
-        for item in items:
-            row += 1
+
+        for row, item in enumerate(items, start=1):
             s += tagged_item_html(item, row)
 
     s += "</div>  <!--end tagged_items -->\n"
@@ -437,16 +438,18 @@ def tags_section(todo_tags):
 
 def main_section(todo_files):
     s = '<div id="main">\n'
-    s += '<h2><a name="Main">Files with To-do Items</a></h2>\n'
+    s += '<h2><a>Files with To-do Items</a></h2>\n'
     for todo_file in todo_files:
         if len(todo_file.todo_items) > 0:
             s += todo_file_html(todo_file.full_name, todo_file.last_modified)
             s += '<div class="filecontent">\n'
-            row = 0
-            for item in todo_file.todo_items:
-                row += 1
+
+            for row, item in enumerate(todo_file.todo_items, start=1):
                 s += "{0}\n".format(todo_item_html(item, row))
-            s += '<p class="toplink">(<a href="#top">top</a>)</p>\n'
+
+            s += '<p class="toplink">'
+            s += '(<a href="#contents_section">top</a>)</p>\n'
+
             s += "</div>  <!--end filecontent -->\n\n"
     s += "</div>  <!--end main -->\n"
     return s
@@ -616,8 +619,7 @@ def get_html_output(page_title):
     s = "{0}\n".format(html_head(page_title))
     s += '<div id="wrapper">\n'
     s += '<div id="content">\n'
-
-    s += '<h1><a name="top">{0}</a></h1>\n'.format(page_title)
+    s += '<h1>{0}</h1>\n'.format(page_title)
 
     s += "{0}\n".format(
         contents_section(
@@ -645,7 +647,7 @@ def get_html_output(page_title):
 
 def write_html_output(opt):
     out_file_name = get_output_filename(opt.output_file, None, ".html")
-    print("Writing file [{0}].".format(out_file_name))
+    print("\nWriting file [{0}].".format(out_file_name))
     with open(out_file_name, "w") as f:
         f.write(
             get_html_output(
@@ -679,7 +681,7 @@ def write_text_output(opt):
     else:
         out_file_name = get_output_filename(opt.output_file, None, ".txt")
 
-    print("Writing file [{0}].".format(out_file_name))
+    print("\nWriting file [{0}].".format(out_file_name))
 
     with open(out_file_name, "w") as f:
         f.write(get_text_output())
@@ -896,9 +898,9 @@ def get_options(argv):
 
 
 def main(argv):
-    print("Running todolister.py (version {0}).".format(app_version))
-
     opts = get_options(argv)
+
+    print("Running todolister.py (version {0}).".format(app_version))
 
     assert opts.output_file is not None
 
