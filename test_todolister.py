@@ -326,7 +326,7 @@ def test_html_output_is_parsable(todo_files_dir):
     html = todolister.get_html_output("TEST")
     parser = html5lib.HTMLParser(strict=True)
     document = parser.parse(html)
-    check = document.findall(".//*[@name='Main']")
+    check = document.findall(".//*[@id='main']")
     assert len(check) == 1
 
 
@@ -473,10 +473,143 @@ def test_creates_text_output(tmp_path):
         "test_creates_text_output",
         "--output-file",
         wo_suffix,
-        "-t"
+        "-t",
     ]
     result = todolister.main(args)
     assert result == 0
 
     assert Path(wo_suffix).with_suffix(".html").exists()
     assert Path(wo_suffix).with_suffix(".txt").exists()
+
+
+def test_scenario(tmp_path):
+    reload(todolister)
+    assert len(todolister.file_list) == 0
+
+    #  Create a test directory tree.
+    test_home = tmp_path / "test" / "home"
+    test_home.mkdir(parents=True)
+
+    doc_dir = test_home / "Documents"
+    doc_dir.mkdir()
+
+    prj_dir = test_home / "Projects"
+    prj_dir.mkdir()
+
+    prj_dir_a = prj_dir / "Project A"
+    prj_dir_a.mkdir()
+
+    prj_dir_b = prj_dir / "Project_B"
+    prj_dir_b.mkdir()
+
+    hold_dir = prj_dir / "Hold"
+    prj_dir_c = hold_dir / "Project_C"
+    prj_dir_c.mkdir(parents=True)
+
+    #  Write the temporary test_home path to a local file to make
+    #  it easy to find for manual review while the temporary
+    #  directory still exists.
+    dev_out_dir = Path.cwd() / "output_t"
+    if dev_out_dir.exists():
+        (dev_out_dir / "test_tmp_path.txt").write_text(str(test_home))
+
+    #  Create test files.
+    todo_a = prj_dir_a / "notes.txt"
+    todo_a.write_text(
+        textwrap.dedent(
+            """
+            [ ] Finish project A.
+
+            [ ]* This task is flagged.
+                 It shows in a Flagged Items section near the top.
+            """
+        )
+    )
+    assert todo_a.exists()
+
+    todo_b = prj_dir_b / "notes.txt"
+    todo_b.write_text(
+        textwrap.dedent(
+            """
+            [ ] Finish project B.
+
+            [ ]+ This task is elevated. It is displayed in bold text.
+
+            [ ] This task is tagged #needs-something
+                It shows in a Tagged Items section below Flagged Items.
+                Multiple instances of a tag are grouped in that section.
+            """
+        )
+    )
+    assert todo_b.exists()
+
+    todo_c = prj_dir_c / "notes.txt"
+    todo_c.write_text(
+        textwrap.dedent(
+            """
+            [ ] Finish project C.
+            """
+        )
+    )
+    assert todo_c.exists()
+
+    output_html = doc_dir / "project-tasks.html"
+    output_txt = doc_dir / "project-tasks.txt"
+
+    opt_file = test_home / "todolister.opt"
+    opt_file.write_text(
+        textwrap.dedent(
+            """
+            # todolister.opt for test.
+
+            [output]
+            filename="{0}"
+            by_modified_time_desc=False
+            do_text_file=Yes
+            do_text_file_dt=No
+            no_html=n
+            title="Projects To-Do"
+
+            #  True/False, Yes/No, y/n, and 1/0 all work for switch settings
+            #  (case-insensitive).
+
+
+            [match]
+            "^notes.*.txt$"
+            ".*notes.txt$"
+            "^todo.*.txt$"
+            ".*-todo.txt$"
+            "^Context-.*.txt$"
+
+            #  The [match] section is optional. These are same
+            #  as the default patterns.
+
+
+            [folders]
+            "{1}"+
+
+            #  '+' is the switch for recursive scan into sub-folders.
+
+            [exclude]
+            "{2}
+
+            #  In this scenario, we don't want to see projects
+            #  in the "Hold" folder.
+            """
+        ).format(
+            str(output_html.with_suffix("")), str(prj_dir), str(hold_dir)
+        )
+    )
+
+    #  Run test.
+    args = ["todolister.py", "--no-browser", "--options-file", str(opt_file)]
+    result = todolister.main(args)
+    assert result == 0
+
+    assert output_html.exists()
+    assert output_txt.exists()
+
+    text = output_txt.read_text()
+    assert "project A" in text
+    assert "project B" in text
+    assert "project C" not in text
