@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projects To-Do</title>
+
+    <style>
+        h1 {color: steelblue;}
+        h2 {color: slategrey;}
+        #wrapper {padding: 10px;}
+        #content {max-width: 960px;}
+        #footer {
+            border-top: 2px solid #999;
+            font-family: monospace;
+            font-size: medium;
+            color: #111;
+        }
+        #main {border-top: 2px solid #999;}
+        .fileheader {
+            border: 1px solid #9797CD;
+            background-color: #EEF;
+            padding-left: 10px;
+        }
+        .filename {
+            font-family: monospace;
+            font-size: large;
+            font-weight: bold;
+            color: navy;
+        }
+        .filetime {
+            margin-left: 5px;
+            font-family: monospace;
+            font-size: small;
+            color: #111;
+        }
+        .filecontent {
+            margin-left: 20px;
+            margin-right: 20px;
+            margin-bottom: 25px;
+        }
+        pre {
+            margin: 0px;
+            font-family: Consolas, monospace;
+        }
+        .item0, .item1 {
+            padding-left: 10px;
+            padding-top: 5px;
+            margin: 4px 0 8px;
+        }
+        .item0 {background-color: #F5F5F5;}
+        .item1 {background-color: #FFF;}
+        .flagged {font-weight: bold;}
+        #flagged_section, #tags_section, #contents_section {
+            border-top: 2px solid #999;
+            margin-bottom: 30px;
+        }
+        #flagged_items a, #tagged_items a, #contents_section a {
+            font-family: monospace;
+            font-size: large;
+            color: navy;
+        }
+        #flagged_items {
+            margin-left: 20px;
+            margin-right: 20px;
+            margin-bottom: 25px;
+        }
+        .flag0, .flag1 {
+            padding-left: 10px;
+            padding-top: 5px;
+            margin: 4px 0 8px;
+        }
+        #tagged_items {margin-bottom: 25px;}
+        .tag0, .tag1 {
+            padding-left: 10px;
+            padding-top: 5px;
+            margin: 4px auto 8px 20px;
+        }
+        .flag0, .tag0 {background-color: #F5F5F5;}
+        .flag1, .tag1 {background-color: #FFF;}
+        .tagheader {
+            margin-top: 20px;
+            padding: 5px 5px 5px 10px;
+            border: 1px solid rgb(231, 231, 146);
+            background-color: rgb(250, 250, 232);
+        }
+        .toplink {font-size: x-small;}
+        #contents_section h3 {margin-left: 20px;}
+        #contents_section ul {margin-left: 20px;}
+    </style>
+</head>
+<body>
+
+<div id="wrapper">
+<div id="content">
+<h1>Projects To-Do</h1>
+<div id="contents_section">
+<h2>Contents</h2>
+<h3>Sections</h3>
+<ul>
+<li><a href="#flagged_section">Flagged Items</a></li>
+<li><a href="#tags_section">Tagged Items</a></li>
+<li><a href="#main">Files with To-do Items</a></li>
+</ul>
+<h3>Files</h3>
+<ul>
+<li class="flink"><a href="#test-home-Projects-Project_A-notes-txt">/test/home/Projects/Project_A/notes.txt</a></li>
+<li class="flink"><a href="#test-home-Projects-Project_B-notes-txt">/test/home/Projects/Project_B/notes.txt</a></li>
+</ul>
+</div>  <!--end contents_section -->
+
+<div id="flagged_section">
+<h2><a>Flagged Items</a></h2>
+<div id="flagged_items">
+<div class="flag1">
+<p class="flink"><a href="#test-home-Projects-Project_A-notes-txt">/test/home/Projects/Project_A/notes.txt</a></p>
+<pre>
+[ ]* This task is flagged.
+     It shows in a Flagged Items section near the top.
+
+</pre>
+</div>
+</div>  <!--end flagged_items -->
+</div>  <!--end flagged_section -->
+
+<div id="tags_section">
+<h2><a>Tagged Items</a></h2>
+<div id="tagged_items">
+<div class="tagheader">
+<p>Tag: <strong>#needs-something</strong></p>
+</div>
+<div class="tag1">
+<p class="flink"><a href="#test-home-Projects-Project_B-notes-txt">/test/home/Projects/Project_B/notes.txt</a></p>
+<pre>
+[ ] This task is tagged #needs-something
+    It shows in a Tagged Items section below Flagged Items.
+    Multiple instances of a tag are grouped in that section.
+
+</pre>
+</div>
+</div>  <!--end tagged_items -->
+</div>  <!--end tags_section -->
+
+<div id="main">
+<h2><a>Files with To-do Items</a></h2>
+<div class="fileheader" id="test-home-Projects-Project_A-notes-txt">
+  <p class="filename"><a>/test/home/Projects/Project_A/notes.txt</a></p>
+  <p class="filetime">Modified 2021-12-07 06:56</p>
+</div>
+<div class="filecontent">
+<div class="item1">
+<pre>
+[ ] Finish project-A.
+
+</pre>
+</div>
+
+<div class="item0 flagged">
+<pre>
+[ ]* This task is flagged.
+     It shows in a Flagged Items section near the top.
+
+</pre>
+</div>
+
+<p class="toplink">(<a href="#contents_section">top</a>)</p>
+</div>  <!--end filecontent -->
+
+<div class="fileheader" id="test-home-Projects-Project_B-notes-txt">
+  <p class="filename"><a>/test/home/Projects/Project_B/notes.txt</a></p>
+  <p class="filetime">Modified 2021-12-07 06:56</p>
+</div>
+<div class="filecontent">
+<div class="item1">
+<pre>
+[ ] Finish project-B.
+
+</pre>
+</div>
+
+<div class="item0 flagged">
+<pre>
+[ ]+ This task is elevated. It is displayed in bold text.
+
+</pre>
+</div>
+
+<div class="item1">
+<pre>
+[ ] This task is tagged #needs-something
+    It shows in a Tagged Items section below Flagged Items.
+    Multiple instances of a tag are grouped in that section.
+
+</pre>
+</div>
+
+<p class="toplink">(<a href="#contents_section">top</a>)</p>
+</div>  <!--end filecontent -->
+
+</div>  <!--end main -->
+
+<div id="footer">
+Created 2021-12-07 06:56 by todolister.py (version 211203.1).
+</div>
+
+</div>  <!--end content -->
+</div>  <!--end wrapper -->
+</body>
+</html>

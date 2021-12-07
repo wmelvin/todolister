@@ -1,0 +1,36 @@
+
+# Example options file.
+
+[output]
+filename="/test/home/Documents/project-tasks"
+by_modified_time_desc=False
+do_text_file=Yes
+do_text_file_dt=No
+no_html=n
+title="Projects To-Do"
+
+#  True/False, Yes/No, y/n, and 1/0 all work for switch settings
+#  (case-insensitive).
+
+
+[match]
+"^notes.*.txt$"
+".*notes.txt$"
+"^todo.*.txt$"
+".*-todo.txt$"
+"^Context-.*.txt$"
+
+#  The [match] section is optional. These are same
+#  as the default patterns.
+
+
+[folders]
+"/test/home/Projects"+
+
+#  '+' is the switch for recursive scan into sub-folders.
+
+[exclude]
+"/test/home/Projects/Hold
+
+#  In this scenario, we don't want to see projects
+#  in the "Hold" folder.

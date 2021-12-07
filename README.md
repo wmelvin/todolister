@@ -6,8 +6,8 @@ Square brackets with a space in between at the beginning of a line indicate an o
 
 ```
 [ ] A to-do item.
-[ ]* A **flagged** to-do item.
-[ ]+ An **elevated** to-do item.
+[ ]* A flagged to-do item.
+[ ]+ An elevated to-do item.
 ```
 
 Only **open items** (a space between the brackets) are listed. This is the convention I use for closing my to-do items:
@@ -31,29 +31,37 @@ The closed items above are ignored by *todolister*. They are included here as an
 
 ## Options File ##
 
-**Sections**
+### Sections ###
 
-`[output]`
-- `filename=`
-- `by_modified_time_desc=`
-- `do_text_file=`
-- `do_text_file_dt=`
-- `no_html=`
-- `title=`
+**Output**
 
+The `[output]` section can contain the following settings:
 
-`[match]`
+`filename=` Name of the output file. The '.html' extension will be added if not specified. If text output is enabled the same name, but with a *.txt* extension, is used. Same as the -o, --output-file, command-line option.
 
-`[folders]`
+`by_modified_time_desc=` (Y/N) "Y" = Order the files by modified time, in descending order, in the report.
 
-`[exclude]`
+`do_text_file=` (Y/N) "Y" = Produce a text (.txt) version of the report.
 
+`do_text_file_dt=` (Y/N) "Y" = Produce a text (.txt) version of the report that includes a *date_time* tag in the file name. This can be used to keep a history of changes that can be reviewed using a file comparison tool.
+
+`no_html=` (Y/N) "Y" = do not produce the HTML file. Use to only produce the text file.
+
+`title=` Title to use in the generated HTML file.
 
 The following *yes/no* options can be configured to prompt for user input by entering "ask" for the setting (not case-sensitive):
 - `by_modified_time_desc=Ask`
 - `do_text_file=ask`
 - `do_text_file_dt=ask`
 - `no_html=ask`
+
+**Lists**
+
+The `[match]` section contains a list file name matching patterns, one per line, for selecting which files to scan for to-do items.
+
+The `[folders]` section contains a list of one or more folder paths, one per line, to scan for files that match the to-do file patterns.
+
+The `[exclude]`  section contains a list of one or more sub-folder paths, one per line, to exclude while scanning the given list of folders.
 
 
 ## Command-Line Usage ##

@@ -1,0 +1,26 @@
+Gathered ToDo Items
+----------------------------------------------------------------------
+/test/home/Projects/Project_A/notes.txt
+  (2021-12-07 06:56)
+
+[ ] Finish project-A.
+
+[ ]* This task is flagged.
+     It shows in a Flagged Items section near the top.
+
+
+----------------------------------------------------------------------
+/test/home/Projects/Project_B/notes.txt
+  (2021-12-07 06:56)
+
+[ ] Finish project-B.
+
+[ ]+ This task is elevated. It is displayed in bold text.
+
+[ ] This task is tagged #needs-something
+    It shows in a Tagged Items section below Flagged Items.
+    Multiple instances of a tag are grouped in that section.
+
+
+----------------------------------------------------------------------
+Created 2021-12-07 06:56 by todolister.py (version 211203.1).

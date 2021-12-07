@@ -496,7 +496,7 @@ def test_scenario(tmp_path):
     prj_dir = test_home / "Projects"
     prj_dir.mkdir()
 
-    prj_dir_a = prj_dir / "Project A"
+    prj_dir_a = prj_dir / "Project_A"
     prj_dir_a.mkdir()
 
     prj_dir_b = prj_dir / "Project_B"
@@ -518,7 +518,7 @@ def test_scenario(tmp_path):
     todo_a.write_text(
         textwrap.dedent(
             """
-            [ ] Finish project A.
+            [ ] Finish project-A.
 
             [ ]* This task is flagged.
                  It shows in a Flagged Items section near the top.
@@ -531,7 +531,7 @@ def test_scenario(tmp_path):
     todo_b.write_text(
         textwrap.dedent(
             """
-            [ ] Finish project B.
+            [ ] Finish project-B.
 
             [ ]+ This task is elevated. It is displayed in bold text.
 
@@ -547,7 +547,7 @@ def test_scenario(tmp_path):
     todo_c.write_text(
         textwrap.dedent(
             """
-            [ ] Finish project C.
+            [ ] Finish project-C.
             """
         )
     )
@@ -610,6 +610,6 @@ def test_scenario(tmp_path):
     assert output_txt.exists()
 
     text = output_txt.read_text()
-    assert "project A" in text
-    assert "project B" in text
-    assert "project C" not in text
+    assert "project-A" in text
+    assert "project-B" in text
+    assert "project-C" not in text
