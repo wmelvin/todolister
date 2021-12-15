@@ -1,4 +1,4 @@
-# todolister #
+# todolister
 
 The **todolister.py** command-line tool scans text files and generates a HTML report listing found to-do items.
 
@@ -21,7 +21,7 @@ Only **open items** (a space between the brackets) are listed. This is the conve
 
 [>] Moved to another list, but keep the history in the current file.
 
-[.] Stop. Probably something from an old list. 
+[.] Stop. Probably something from an old list.
     Maybe I did it. Maybe I didn't.
     Don't want to be reminded.
 ```
@@ -29,9 +29,9 @@ Only **open items** (a space between the brackets) are listed. This is the conve
 The closed items above are ignored by *todolister*. They are included here as an example of how my lists are used. Of course, completed items can simply be deleted if you don't want the history.
 
 
-## Options File ##
+## Options File
 
-### Sections ###
+### Sections
 
 **Output**
 
@@ -64,12 +64,21 @@ The `[folders]` section contains a list of one or more folder paths, one per lin
 The `[exclude]`  section contains a list of one or more sub-folder paths, one per line, to exclude while scanning the given list of folders.
 
 
-## Command-Line Usage ##
+## Examples
+
+[Options File](examples/example.opt)
+
+[HTML Report](examples/project-tasks.html)
+
+[Text Report](examples/project-tasks.txt)
+
+
+## Command-Line Usage
 
 ```
 usage: todolister.py [-h] [-f OPTFILE] [-r] [-m] [-o OUTPUT_FILE] [-t] [-d]
                      [-n] [-x EXCLUDE_PATH] [-p PAGE_TITLE] [-q]
-                     [folders [folders ...]]
+                     [folders ...]
 
 Read text files containing to-do markers and create a HTML report.
 
@@ -106,6 +115,6 @@ In past jobs, I have been the sole developer supporting a team whose function is
 
 There were many small projects and sub-projects to support both long-term (core systems) and short-term (support requests, research, prototypes, etc.) work. Having the to-do list, and the history of completed tasks, in the same location as other project artifacts worked well in that context. However, there was still the need to see an aggregate view of pending tasks.
 
-In my previous job, I wrote a PowerShell script to generate a report listing to-do items from across the set of projects I worked on. That script belongs to the company I was working for (you know, that work-for-hire copyright thing). 
+In my previous job, I wrote a PowerShell script to generate a report listing to-do items from across the set of projects I worked on. That script belongs to the company I was working for (you know, that work-for-hire copyright thing).
 
 I wanted that same functionality for my personal projects, and I wanted more experience programming with Python, so I wrote *todolister.py*.
