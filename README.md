@@ -68,7 +68,7 @@ The `[exclude]`  section contains a list of one or more sub-folder paths, one pe
 
 [Options File](examples/example.opt)
 
-[HTML Report](examples/project-tasks.html)
+[HTML Report](https://wmelvin.github.io/examples/todolister/project-tasks.html)
 
 [Text Report](examples/project-tasks.txt)
 
