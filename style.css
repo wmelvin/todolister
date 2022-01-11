@@ -9,14 +9,14 @@ h2 {color: slategrey;}
 #footer {
     border-top: 2px solid #999;
     font-family: monospace;
-    font-size: medium;
+    font-size: 10px;
     color: #111;
 }
     
 #main {border-top: 2px solid #999;}
 
 .fileheader {
-    border: 1px solid #9797CD;    
+    border: 1px solid #9797CD;
     background-color: #EEF;
     padding-left: 10px;
 }
@@ -96,7 +96,7 @@ pre {
 .tagheader {
     margin-top: 20px;
     padding: 5px 5px 5px 10px;
-    border: 1px solid rgb(231, 231, 146);    
+    border: 1px solid rgb(231, 231, 146);
     background-color: rgb(250, 250, 232);
 }
 
@@ -105,3 +105,9 @@ pre {
 #contents_section h3 {margin-left: 20px;}
 
 #contents_section ul {margin-left: 20px;}
+
+#settings_section {
+    border-top: 2px solid #999;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+}

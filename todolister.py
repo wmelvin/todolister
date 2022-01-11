@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------
 # todolister.py
 #
-# 
+#
 # ---------------------------------------------------------------------
 
 import argparse
@@ -32,9 +32,9 @@ AppOptions = namedtuple(
     + "do_text_dt, no_html, page_title, no_browser",
 )
 
-app_version = "211203.1"
+app_version = "220111.1"
 
-pub_version = "1.0.dev1"
+pub_version = "0.1.dev1"
 
 css_mode = 2
 # 0 = link to external css file (use for trying css changes).
@@ -76,6 +76,7 @@ def matches_filespec(file_name):
 
 def exclude_dir(dir_name):
     return any(dir_name == dir for dir in dirs_to_exclude)
+
 
 # TODO: Is simple string match good enough?
 
@@ -195,7 +196,7 @@ def embed_style():
         #footer {
             border-top: 2px solid #999;
             font-family: monospace;
-            font-size: medium;
+            font-size: 10px;
             color: #111;
         }
         #main {border-top: 2px solid #999;}
@@ -269,8 +270,14 @@ def embed_style():
         .toplink {font-size: x-small;}
         #contents_section h3 {margin-left: 20px;}
         #contents_section ul {margin-left: 20px;}
-    </style>"""
+        #settings_section {
+            border-top: 2px solid #999;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+        }
 
+    </style>
+    """
 
 #  endregion
 
@@ -294,6 +301,7 @@ def html_head(title):
         s += get_css_from_file(indent_len=8)
         s += "    </style>\n"
     else:
+        s += '    <link rel="stylesheet" href="../style.css" />\n'
         s += '    <link rel="stylesheet" href="style.css" />\n'
 
     s += "</head>\n"
@@ -387,7 +395,7 @@ def flagged_items_html(items):
     if len(items) == 0:
         return ""
     s = '<div id="flagged_section">\n'
-    s += '<h2><a>Flagged Items</a></h2>\n'
+    s += "<h2><a>Flagged Items</a></h2>\n"
     s += '<div id="flagged_items">\n'
     for item in items:
         s += item
@@ -418,9 +426,9 @@ def tagged_item_html(item, row):
 
 def tags_section(todo_tags):
     if len(todo_tags) == 0:
-        return
+        return ""
     s = '<div id="tags_section">\n'
-    s += '<h2><a>Tagged Items</a></h2>\n'
+    s += "<h2><a>Tagged Items</a></h2>\n"
     s += '<div id="tagged_items">\n'
 
     for tag, items in sorted(todo_tags.items()):
@@ -438,7 +446,7 @@ def tags_section(todo_tags):
 
 def main_section(todo_files):
     s = '<div id="main">\n'
-    s += '<h2><a>Files with To-do Items</a></h2>\n'
+    s += "<h2><a>Files with To-do Items</a></h2>\n"
     for todo_file in todo_files:
         if len(todo_file.todo_items) > 0:
             s += todo_file_html(todo_file.full_name, todo_file.last_modified)
@@ -452,6 +460,26 @@ def main_section(todo_files):
 
             s += "</div>  <!--end filecontent -->\n\n"
     s += "</div>  <!--end main -->\n"
+    return s
+
+
+def settings_section():
+    s = '<div id="settings_section">\n'
+
+    s += "<p>Directories scanned:<br>\n"
+    for dir in dirs_to_scan:
+        s += "&nbsp;&nbsp;{}&nbsp;&nbsp;&nbsp;(recurse={})<br>\n".format(
+            dir.dir_name, dir.do_recurse
+        )
+    s += "</p>\n"
+
+    if 0 < len(dirs_to_exclude):
+        s += "<p>Directories excluded:<br>\n"
+        for dir in dirs_to_exclude:
+            s += "&nbsp;&nbsp;{}<br>\n".format(dir)
+        s += "</p>\n"
+
+    s += "</div>  <!--end settings_section -->\n"
     return s
 
 
@@ -619,7 +647,7 @@ def get_html_output(page_title):
     s = "{0}\n".format(html_head(page_title))
     s += '<div id="wrapper">\n'
     s += '<div id="content">\n'
-    s += '<h1>{0}</h1>\n'.format(page_title)
+    s += "<h1>{0}</h1>\n".format(page_title)
 
     s += "{0}\n".format(
         contents_section(
@@ -632,6 +660,8 @@ def get_html_output(page_title):
     s += "{0}\n".format(tags_section(item_tags))
 
     s += "{0}\n".format(main_section(todo_files))
+
+    s += "{0}\n".format(settings_section())
 
     s += '<div id="footer">\n'
     s += "Created {0} by todolister.py (version {1}).\n".format(
@@ -649,11 +679,7 @@ def write_html_output(opt):
     out_file_name = get_output_filename(opt.output_file, None, ".html")
     print("\nWriting file [{0}].".format(out_file_name))
     with open(out_file_name, "w") as f:
-        f.write(
-            get_html_output(
-                opt.page_title
-            )
-        )
+        f.write(get_html_output(opt.page_title))
 
 
 def get_text_output():
