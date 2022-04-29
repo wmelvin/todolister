@@ -28,11 +28,11 @@ TodoFile = namedtuple("TodoFile", "last_modified, full_name, todo_items")
 
 AppOptions = namedtuple(
     "AppOptions",
-    "folders, optfile, recurse, mtime, output_file, do_text, "
+    "folders, optfile, recurse, by_mtime, output_file, do_text, "
     + "do_text_dt, no_html, page_title, no_browser",
 )
 
-app_version = "220111.1"
+app_version = "220429.1"
 
 pub_version = "0.1.dev1"
 
@@ -463,7 +463,7 @@ def main_section(todo_files):
     return s
 
 
-def settings_section():
+def settings_section(by_mtime: bool):
     s = '<div id="settings_section">\n'
 
     s += "<p>Directories scanned:<br>\n"
@@ -478,6 +478,9 @@ def settings_section():
         for dir in dirs_to_exclude:
             s += "&nbsp;&nbsp;{}<br>\n".format(dir)
         s += "</p>\n"
+
+    if by_mtime:
+        s += "<p>Sorted by file-modified time, most recent first.</p>\n"
 
     s += "</div>  <!--end settings_section -->\n"
     return s
@@ -538,10 +541,10 @@ def opt_is_true(value, prompt):
     return (len(s) > 0) and (s[0].lower() in ("t", "y", "1"))
 
 
-def getopt_mtime(default_mtime, opt_content):
+def getopt_by_mtime(by_mtime_default, opt_content):
     value = get_option_value("[output]", "by_modified_time_desc", opt_content)
     if value is None:
-        return default_mtime
+        return by_mtime_default
     else:
         return opt_is_true(
             value, "Sort by file-modified time in descending order (y/N)?"
@@ -643,7 +646,7 @@ def get_output_filename(args_filename, date_time, desired_suffix):
     return s
 
 
-def get_html_output(page_title):
+def get_html_output(page_title: str, by_mtime: bool):
     s = "{0}\n".format(html_head(page_title))
     s += '<div id="wrapper">\n'
     s += '<div id="content">\n'
@@ -661,7 +664,7 @@ def get_html_output(page_title):
 
     s += "{0}\n".format(main_section(todo_files))
 
-    s += "{0}\n".format(settings_section())
+    s += "{0}\n".format(settings_section(by_mtime))
 
     s += '<div id="footer">\n'
     s += "Created {0} by todolister.py (version {1}).\n".format(
@@ -675,11 +678,11 @@ def get_html_output(page_title):
     return s
 
 
-def write_html_output(opt):
-    out_file_name = get_output_filename(opt.output_file, None, ".html")
+def write_html_output(opts: AppOptions):
+    out_file_name = get_output_filename(opts.output_file, None, ".html")
     print("\nWriting file [{0}].".format(out_file_name))
     with open(out_file_name, "w") as f:
-        f.write(get_html_output(opt.page_title))
+        f.write(get_html_output(opts.page_title, opts.by_mtime))
 
 
 def get_text_output():
@@ -795,7 +798,7 @@ def get_args(argv):
     ap.add_argument(
         "-m",
         "--mtime-desc",
-        dest="mtime",
+        dest="by_mtime",
         action="store_true",
         help="Sort files by last-modified time in descending order.",
     )
@@ -911,7 +914,7 @@ def get_options(argv):
         args_parsed.folders,
         args_parsed.optfile,
         args_parsed.recurse,
-        getopt_mtime(args_parsed.mtime, opt_lines),
+        getopt_by_mtime(args_parsed.by_mtime, opt_lines),
         args_parsed.output_file,
         getopt_do_text(args_parsed.do_text, opt_lines),
         getopt_do_text_dt(args_parsed.do_text_dt, opt_lines),
@@ -937,7 +940,7 @@ def main(argv):
         print("Scanning folder [{0}]".format(dir.dir_name))
         get_matching_files(dir.dir_name, dir.do_recurse)
 
-    if opts.mtime:
+    if opts.by_mtime:
         #  The last_modified field is the default for sort.
         file_list.sort()
         file_list.reverse()

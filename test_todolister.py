@@ -323,7 +323,7 @@ def test_html_output_is_parsable(todo_files_dir):
     ]
     result = todolister.main(args)
     assert result == 0
-    html = todolister.get_html_output("TEST")
+    html = todolister.get_html_output("TEST", False)
     parser = html5lib.HTMLParser(strict=True)
     document = parser.parse(html)
     check = document.findall(".//*[@id='main']")
@@ -365,7 +365,7 @@ def test_file_permission_error(tmp_path):
 
     assert 0 < len(todolister.error_messages)
 
-    html = todolister.get_html_output("test_file_permission_error")
+    html = todolister.get_html_output("test_file_permission_error", False)
     assert "ERROR (PermissionError):" in html
 
 
@@ -429,7 +429,7 @@ def test_html_details(tmp_path):
     result = todolister.main(args)
     assert result == 0
 
-    html = todolister.get_html_output("TEST")
+    html = todolister.get_html_output("TEST", False)
 
     doc = html5lib.parse(html)
 
