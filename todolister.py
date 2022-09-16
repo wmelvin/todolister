@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 
 # ---------------------------------------------------------------------
-# todolister.py
-#
-#
+#  todolister.py
 # ---------------------------------------------------------------------
 
 import argparse
@@ -29,10 +27,10 @@ TodoFile = namedtuple("TodoFile", "last_modified, full_name, todo_items")
 AppOptions = namedtuple(
     "AppOptions",
     "folders, optfile, recurse, by_mtime, output_file, do_text, "
-    + "do_text_dt, no_html, page_title, no_browser",
+    "do_text_dt, no_html, page_title, no_browser",
 )
 
-app_version = "220429.1"
+app_version = "220915.1"
 
 pub_version = "0.1.dev1"
 
@@ -127,11 +125,11 @@ def get_todo_items(file_name):
             is_elevated = False
             lines = text_file.readlines()
             for line in lines:
-                stripped = line.strip()
+                strip_line = line.strip()
                 if in_todo:
-                    if len(stripped) == 0:
+                    if not strip_line:
                         in_todo = False
-                        if len(todo_text) > 0:
+                        if todo_text:
                             todo_items.append(
                                 TodoItem(
                                     is_flagged,
@@ -146,15 +144,15 @@ def get_todo_items(file_name):
                     else:
                         todo_text += line
                 else:
-                    if stripped.startswith("[ ]"):
+                    if strip_line.startswith("[ ]"):
                         in_todo = True
-                        is_flagged = stripped.startswith("[ ]*")
-                        is_elevated = stripped.startswith("[ ]+")
+                        is_flagged = strip_line.startswith("[ ]*")
+                        is_elevated = strip_line.startswith("[ ]+")
                         todo_text += line
 
             #  Save last item, in case there were no blank lines at the
             #  end of the file.
-            if len(todo_text) > 0:
+            if todo_text:
                 todo_items.append(
                     TodoItem(is_flagged, is_elevated, todo_text, file_name)
                 )
@@ -178,7 +176,7 @@ def get_css_from_file(indent_len):
     with open(css_file_name, "r") as css_file:
         lines = css_file.readlines()
         for line in lines:
-            if len(line.strip()) > 0:
+            if line.strip():
                 css += "{0}{1}".format(indent, line)
     css += "\n"
     return css
@@ -371,7 +369,7 @@ def contents_section(todo_files, any_flags, any_tags):
     s += "<ul>\n"
 
     for todo_file in todo_files:
-        if len(todo_file.todo_items) > 0:
+        if todo_file.todo_items:
             s += '<li class="flink"><a href="#{0}">{1}</a></li>{2}'.format(
                 as_link_name(todo_file.full_name), todo_file.full_name, "\n"
             )
@@ -392,8 +390,9 @@ def flagged_item_html(item, row):
 
 
 def flagged_items_html(items):
-    if len(items) == 0:
+    if not items:
         return ""
+
     s = '<div id="flagged_section">\n'
     s += "<h2><a>Flagged Items</a></h2>\n"
     s += '<div id="flagged_items">\n'
@@ -407,7 +406,7 @@ def flagged_items_html(items):
 def get_flagged_items():
     row = 0
     for todo_file in todo_files:
-        if len(todo_file.todo_items) > 0:
+        if todo_file.todo_items:
             for item in todo_file.todo_items:
                 if item.is_flagged:
                     row += 1
@@ -425,8 +424,9 @@ def tagged_item_html(item, row):
 
 
 def tags_section(todo_tags):
-    if len(todo_tags) == 0:
+    if not todo_tags:
         return ""
+
     s = '<div id="tags_section">\n'
     s += "<h2><a>Tagged Items</a></h2>\n"
     s += '<div id="tagged_items">\n'
@@ -448,7 +448,7 @@ def main_section(todo_files):
     s = '<div id="main">\n'
     s += "<h2><a>Files with To-do Items</a></h2>\n"
     for todo_file in todo_files:
-        if len(todo_file.todo_items) > 0:
+        if todo_file.todo_items:
             s += todo_file_html(todo_file.full_name, todo_file.last_modified)
             s += '<div class="filecontent">\n'
 
@@ -473,7 +473,7 @@ def settings_section(by_mtime: bool):
         )
     s += "</p>\n"
 
-    if 0 < len(dirs_to_exclude):
+    if dirs_to_exclude:
         s += "<p>Directories excluded:<br>\n"
         for dir in dirs_to_exclude:
             s += "&nbsp;&nbsp;{}<br>\n".format(dir)
@@ -491,9 +491,7 @@ def get_option_entries(opt_section, opt_content):
     in_section = False
     for line in opt_content:
         s = line.strip()
-        if len(s) == 0:
-            in_section = False
-        else:
+        if s:
             if in_section:
                 #  Handle new section w/o blank lines between.
                 if s.startswith("["):
@@ -503,6 +501,8 @@ def get_option_entries(opt_section, opt_content):
                     result.append(s)
             if s == opt_section:
                 in_section = True
+        else:
+            in_section = False
     return result
 
 
@@ -538,7 +538,7 @@ def opt_is_true(value, prompt):
     #  Y or N, 1 or 0. The values True, Yes, and 1 are considered true,
     #  though only the first character is checked (so, for example,
     #  'turtle' is also true).
-    return (len(s) > 0) and (s[0].lower() in ("t", "y", "1"))
+    return s and (s[0].lower() in ("t", "y", "1"))
 
 
 def getopt_by_mtime(by_mtime_default, opt_content):
@@ -587,19 +587,19 @@ def getopt_title(default_title, opt_content):
 
 def getopt_filespecs(opt_content):
     entries = get_option_entries("[match]", opt_content)
-    if len(entries) == 0:
-        specs = default_file_specs
-    else:
+    if entries:
         #  If the options file contains file specs then they override the
         #  defaults.
         specs = [entry.strip("'\" ") for entry in entries]
+    else:
+        specs = default_file_specs
     for spec in specs:
         file_specs.append(spec)
 
 
 def getopt_dirs_to_scan(opt_content):
     entries = get_option_entries("[folders]", opt_content)
-    if 0 < len(entries):
+    if entries:
         for entry in entries:
             recurse = False
             s = entry.strip()
@@ -614,7 +614,7 @@ def getopt_dirs_to_scan(opt_content):
 
 def getopt_dirs_to_exclude(opt_content):
     entries = get_option_entries("[exclude]", opt_content)
-    if 0 < len(entries):
+    if entries:
         for entry in entries:
             s = entry.strip("'\" ")
             dirs_to_exclude.append(str(Path(s).expanduser().resolve()))
@@ -638,8 +638,8 @@ def get_output_filename(args_filename, date_time, desired_suffix):
     if matches_filespec(Path(s).name):
         print(
             "\nWARNING: Output file name matches a specification "
-            + "for files to be scanned. Its contents will be "
-            + "included in subsequent scans, causing duplication."
+            "for files to be scanned. Its contents will be "
+            "included in subsequent scans, causing duplication."
         )
         print("   NAME: {0}\n".format(s))
 
@@ -654,7 +654,7 @@ def get_html_output(page_title: str, by_mtime: bool):
 
     s += "{0}\n".format(
         contents_section(
-            todo_files, (len(flagged_items) > 0), (len(item_tags) > 0)
+            todo_files, bool(flagged_items), bool(item_tags)
         )
     )
 
@@ -689,7 +689,7 @@ def get_text_output():
     sep = "-" * 70
     text = "Gathered ToDo Items\n"
     for todo_file in todo_files:
-        if len(todo_file.todo_items) > 0:
+        if todo_file.todo_items:
             s = sep + "\n"
             s += todo_file.full_name + "\n"
             s += "  ({0})\n\n".format(todo_file.last_modified)
@@ -745,7 +745,7 @@ def prune(text):
 
 def get_item_tags():
     for todo_file in todo_files:
-        if len(todo_file.todo_items) > 0:
+        if todo_file.todo_items:
             for item in todo_file.todo_items:
                 s = prune(item.item_text)
                 #  Split into words (which might not really be words).
@@ -764,7 +764,7 @@ def get_item_tags():
 def get_args(argv):
     ap = argparse.ArgumentParser(
         description="Read text files containing to-do markers and create a "
-        + "HTML report."
+        "HTML report."
     )
 
     #  Note: Using the term 'folder' instead of 'directory' in argument
@@ -791,8 +791,8 @@ def get_args(argv):
         dest="recurse",
         action="store_true",
         help="Recurse sub-folders. Applies to all folders specified. "
-        + "Use an options file to specify the recurse option for "
-        + "individual folders.",
+        "Use an options file to specify the recurse option for "
+        "individual folders.",
     )
 
     ap.add_argument(
@@ -809,7 +809,7 @@ def get_args(argv):
         dest="output_file",
         action="store",
         help="Name of output file. The '.html' extension will be "
-        + "added if not specified.",
+        "added if not specified.",
     )
 
     ap.add_argument(
@@ -826,7 +826,7 @@ def get_args(argv):
         dest="do_text_dt",
         action="store_true",
         help="Create a text file output with the creation date_time in the "
-        + "file name.",
+        "file name.",
     )
 
     ap.add_argument(
@@ -835,7 +835,7 @@ def get_args(argv):
         dest="no_html",
         action="store_true",
         help="Do not create the HTML file output. Use with -t to only create "
-        + "a text file output.",
+        "a text file output.",
     )
 
     ap.add_argument(
@@ -845,7 +845,7 @@ def get_args(argv):
         default="",
         action="store",
         help="Path(s) to exclude from scan. Separate multiple paths using "
-        + "semicolons.",
+        "semicolons.",
     )
     # TODO: Perhaps expand on the help message.
 
@@ -899,11 +899,11 @@ def get_options(argv):
 
     #  If no directories were specified in the arguments or options file
     #  then only scan the current directory.
-    if len(dirs_to_scan) == 0:
+    if not dirs_to_scan:
         dirs_to_scan.append(ScanProps(str(Path.cwd()), False))
 
     for excluded in args_parsed.exclude_path.strip("'\"").split(";"):
-        if len(excluded) > 0:
+        if excluded:
             dirs_to_exclude.append(str(Path(excluded).expanduser().resolve()))
 
     getopt_dirs_to_exclude(opt_lines)
@@ -964,7 +964,7 @@ def main(argv):
     if opts.do_text or opts.do_text_dt:
         write_text_output(opts)
 
-    if 0 < len(error_messages):
+    if error_messages:
         print("\nThere were errors!")
         for msg in error_messages:
             print(msg)
