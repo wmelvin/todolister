@@ -30,7 +30,7 @@ AppOptions = namedtuple(
     "do_text_dt, no_html, page_title, no_browser",
 )
 
-app_version = "220915.1"
+app_version = "220930.1"
 
 pub_version = "0.1.dev1"
 
@@ -124,10 +124,10 @@ def get_todo_items(file_name):
             is_flagged = False
             is_elevated = False
             lines = text_file.readlines()
-            for line in lines:
-                strip_line = line.strip()
+            for line_raw in lines:
+                line_trim = line_raw.strip()
                 if in_todo:
-                    if not strip_line:
+                    if not line_trim:
                         in_todo = False
                         if todo_text:
                             todo_items.append(
@@ -142,13 +142,13 @@ def get_todo_items(file_name):
                             is_flagged = False
                             is_elevated = False
                     else:
-                        todo_text += line
+                        todo_text += line_raw
                 else:
-                    if strip_line.startswith("[ ]"):
+                    if line_trim.startswith("[ ]"):
                         in_todo = True
-                        is_flagged = strip_line.startswith("[ ]*")
-                        is_elevated = strip_line.startswith("[ ]+")
-                        todo_text += line
+                        is_flagged = line_trim.startswith("[ ]*")
+                        is_elevated = line_trim.startswith("[ ]+")
+                        todo_text += line_raw
 
             #  Save last item, in case there were no blank lines at the
             #  end of the file.
@@ -406,11 +406,10 @@ def flagged_items_html(items):
 def get_flagged_items():
     row = 0
     for todo_file in todo_files:
-        if todo_file.todo_items:
-            for item in todo_file.todo_items:
-                if item.is_flagged:
-                    row += 1
-                    flagged_items.append(flagged_item_html(item, row))
+        for item in todo_file.todo_items:
+            if item.is_flagged:
+                row += 1
+                flagged_items.append(flagged_item_html(item, row))
 
 
 def tagged_item_html(item, row):
@@ -614,10 +613,9 @@ def getopt_dirs_to_scan(opt_content):
 
 def getopt_dirs_to_exclude(opt_content):
     entries = get_option_entries("[exclude]", opt_content)
-    if entries:
-        for entry in entries:
-            s = entry.strip("'\" ")
-            dirs_to_exclude.append(str(Path(s).expanduser().resolve()))
+    for entry in entries:
+        s = entry.strip("'\" ")
+        dirs_to_exclude.append(str(Path(s).expanduser().resolve()))
 
 
 def get_output_filename(args_filename, date_time, desired_suffix):
@@ -745,17 +743,16 @@ def prune(text):
 
 def get_item_tags():
     for todo_file in todo_files:
-        if todo_file.todo_items:
-            for item in todo_file.todo_items:
-                s = prune(item.item_text)
-                #  Split into words (which might not really be words).
-                wurdz = s.split(" ")
-                for wurd in wurdz:
-                    if len(wurd) > 1 and wurd.startswith("#"):
-                        if wurd in item_tags.keys():
-                            item_tags[wurd].append(item)
-                        else:
-                            item_tags[wurd] = [item]
+        for item in todo_file.todo_items:
+            s = prune(item.item_text)
+            #  Split into words (which might not really be words).
+            wurdz = s.split(" ")
+            for wurd in wurdz:
+                if len(wurd) > 1 and wurd.startswith("#"):
+                    if wurd in item_tags.keys():
+                        item_tags[wurd].append(item)
+                    else:
+                        item_tags[wurd] = [item]
 
 
 # ---------------------------------------------------------------------
