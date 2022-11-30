@@ -36,6 +36,18 @@ def write_notes_txt(dir_path):
     assert p.exists()
 
 
+def write_notes_md(dir_path):
+    p = dir_path / "notes.md"
+    p.write_text(
+        textwrap.dedent(
+            """
+            [ ] notes.md
+            """
+        )
+    )
+    assert p.exists()
+
+
 def write_subdir_notes_txt(dir_path):
     d = dir_path / "SubDir"
     d.mkdir()
@@ -220,6 +232,29 @@ def write_todo_txt(dir_path):
     assert p.exists()
 
 
+def write_todo_md(dir_path):
+    p = dir_path / "todo.md"
+    p.write_text(
+        textwrap.dedent(
+            """
+            [ ] todo.md - Markdown file.
+                One more line.
+
+            After to-do.
+
+            [ ]* A flagged item.
+
+            [ ]+ An elevated item (should be bold).
+
+            [x] A done item should not be listed.
+
+            That's all.
+            """
+        )
+    )
+    assert p.exists()
+
+
 def write_wonotest_txt(dir_path):
     p = dir_path / "wonotest.txt"
     p.write_text(
@@ -243,6 +278,7 @@ def todo_files_dir(tmp_path_factory):
     """
     p = tmp_path_factory.mktemp("testdata")
     write_notes_txt(p)
+    write_notes_md(p)
     write_notthis_txt(p)
     write_notthisdir_notes_txt(p)
     write_subdir_notes_txt(p)
@@ -253,6 +289,7 @@ def todo_files_dir(tmp_path_factory):
     write_todo_lc_txt(p)
     write_todo_uc_txt(p)
     write_todo_txt(p)
+    write_todo_md(p)
     write_wonotest_txt(p)
     return p
 
@@ -283,7 +320,7 @@ def test_runs_and_fills_lists(todo_files_dir):
     assert 0 < len(todolister.file_specs)
     assert len(todolister.file_specs) == len(todolister.default_file_specs)
     assert len(todolister.dirs_to_scan) == 1
-    expected_n_files = 8
+    expected_n_files = 10
     assert len(todolister.file_list) == expected_n_files
     assert len(todolister.todo_files) == expected_n_files
     assert 0 < len(todolister.flagged_items)
@@ -305,7 +342,7 @@ def test_no_recurse(todo_files_dir):
     ]
     result = todolister.main(args)
     assert result == 0
-    n_files_not_in_subdir = 7
+    n_files_not_in_subdir = 9
     assert len(todolister.file_list) == n_files_not_in_subdir
 
 

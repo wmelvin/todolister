@@ -30,7 +30,7 @@ AppOptions = namedtuple(
     "do_text_dt, no_html, page_title, no_browser",
 )
 
-app_version = "220930.1"
+app_version = "221129.1"
 
 pub_version = "0.1.dev1"
 
@@ -42,8 +42,10 @@ css_mode = 2
 debug_stop_after_args = False
 
 default_file_specs = [
+    "^notes.*.md$",
     "^notes.*.txt$",
     ".*notes.txt$",
+    "^todo.*.md$",
     "^todo.*.txt$",
     ".*-todo.txt$",
     "^Context-.*.txt$",
