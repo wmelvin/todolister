@@ -423,6 +423,22 @@ def get_pre_text(element, id):
     return result
 
 
+def get_itemtext_elements(element, id):
+    """
+    Use XPath expressions to get text from the <div class="itemtext">
+    elements inside an element, such as a <div>, with the given id.
+    """
+    qry = './/*[@class="itemtext"]'
+    result = []
+    a = element.find(f'.//*[@id="{id}"]')
+    if a is not None:
+        b = a.findall(qry)
+        if b is not None:
+            for e in b:
+                result.append(e.text)
+    return result
+
+
 def test_html_details(tmp_path):
     reload(todolister)
     assert len(todolister.file_list) == 0
@@ -470,13 +486,13 @@ def test_html_details(tmp_path):
 
     doc = html5lib.parse(html)
 
-    flagged_items = get_pre_text(doc, "flagged_items")
+    flagged_items = get_itemtext_elements(doc, "flagged_items")
     assert len(flagged_items) == 2
 
-    tagged_items = get_pre_text(doc, "tagged_items")
+    tagged_items = get_itemtext_elements(doc, "tagged_items")
     assert len(tagged_items) == 2
 
-    main_items = get_pre_text(doc, "main")
+    main_items = get_itemtext_elements(doc, "main")
     assert len(main_items) == 5
 
     assert "(should not be shown)" not in html

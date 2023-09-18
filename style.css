@@ -41,9 +41,10 @@ h2 {color: slategrey;}
     margin-bottom: 25px;
 }
 
-pre {
+.itemtext {
     margin: 0px;
     font-family: Consolas, monospace;
+    font-size: 14px;
 }
 
 .item0, .item1 {

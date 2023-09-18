@@ -30,9 +30,13 @@ AppOptions = namedtuple(
     "do_text_dt, no_html, page_title, no_browser",
 )
 
-app_version = "221129.1"
 
+app_version = "230918.1"
 pub_version = "0.1.dev1"
+
+app_name = Path(__file__).name
+app_title = f"{app_name} (v.{app_version})"
+
 
 css_mode = 2
 # 0 = link to external css file (use for trying css changes).
@@ -222,9 +226,10 @@ def embed_style():
             margin-right: 20px;
             margin-bottom: 25px;
         }
-        pre {
+        .itemtext {
             margin: 0px;
             font-family: Consolas, monospace;
+            font-size: 14px;
         }
         .item0, .item1 {
             padding-left: 10px;
@@ -275,7 +280,6 @@ def embed_style():
             font-family: 'Courier New', Courier, monospace;
             font-size: 12px;
         }
-
     </style>
     """
 
@@ -335,8 +339,13 @@ def todo_item_html(item, row):
         add_class = " flagged"
     else:
         add_class = ""
+
     s = '<div class="item{0}{1}">\n'.format(row % 2, add_class)
-    s += "<pre>\n{0}\n</pre>\n".format(html_text(item.item_text))
+
+    s += '<div class="itemtext">\n{0}\n</div>\n'.format(
+        html_text(item.item_text)
+    )
+
     s += "</div>\n"
     return s
 
@@ -383,10 +392,15 @@ def contents_section(todo_files, any_flags, any_tags):
 
 def flagged_item_html(item, row):
     s = '<div class="flag{0}">\n'.format(row % 2)
+
     s += '<p class="flink"><a href="#{0}">{1}</a></p>\n'.format(
         as_link_name(item.source_file), item.source_file
     )
-    s += "<pre>\n{0}\n</pre>\n".format(html_text(item.item_text))
+
+    s += '<div class="itemtext">\n{0}\n</div>\n'.format(
+        html_text(item.item_text)
+    )
+
     s += "</div>\n"
     return s
 
@@ -416,10 +430,15 @@ def get_flagged_items():
 
 def tagged_item_html(item, row):
     s = '<div class="tag{0}">\n'.format(row % 2)
+
     s += '<p class="flink"><a href="#{0}">{1}</a></p>{2}'.format(
         as_link_name(item.source_file), item.source_file, "\n"
     )
-    s += "<pre>\n{0}\n</pre>\n".format(html_text(item.item_text))
+
+    s += '<div class="itemtext">\n{0}\n</div>\n'.format(
+        html_text(item.item_text)
+    )
+
     s += "</div>\n"
     return s
 
@@ -667,8 +686,8 @@ def get_html_output(page_title: str, by_mtime: bool):
     s += "{0}\n".format(settings_section(by_mtime))
 
     s += '<div id="footer">\n'
-    s += "Created {0} by todolister.py (version {1}).\n".format(
-        run_dt.strftime("%Y-%m-%d %H:%M"), app_version
+    s += "Created {0} by {1}.\n".format(
+        run_dt.strftime("%Y-%m-%d %H:%M"), app_title
     )
 
     s += "</div>\n\n"
@@ -698,8 +717,8 @@ def get_text_output():
             s += "\n"
             text += s
     text += sep + "\n"
-    text += "Created {0} by todolister.py (version {1}).\n".format(
-        run_dt.strftime("%Y-%m-%d %H:%M"), app_version
+    text += "Created {0} by {1}.\n".format(
+        run_dt.strftime("%Y-%m-%d %H:%M"), app_title
     )
     return text
 
@@ -926,9 +945,9 @@ def get_options(argv):
 
 
 def main(argv):
-    opts = get_options(argv)
+    print("Running {0}.".format(app_title))
 
-    print("Running todolister.py (version {0}).".format(app_version))
+    opts = get_options(argv)
 
     assert opts.output_file is not None
 
@@ -971,7 +990,7 @@ def main(argv):
 
     open_html_output(opts)
 
-    print("Done (todolister.py - version {0}).".format(app_version))
+    print("Done ({0}).".format(app_title))
 
     return 0
 
