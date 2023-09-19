@@ -12,6 +12,7 @@ import webbrowser
 from collections import namedtuple
 from datetime import datetime
 from pathlib import Path
+from typing import List
 
 
 ScanProps = namedtuple("ScanProps", "dir_name, do_recurse")
@@ -31,7 +32,7 @@ AppOptions = namedtuple(
 )
 
 
-app_version = "230918.1"
+app_version = "230919.1"
 pub_version = "0.1.dev1"
 
 app_name = Path(__file__).name
@@ -66,7 +67,7 @@ dirs_to_scan = []
 dirs_to_exclude = []
 file_list = []
 error_messages = []
-todo_files = []
+todo_files: List[TodoFile] = []
 flagged_items = []
 item_tags = {}
 
@@ -331,6 +332,7 @@ def html_text(text):
     s = text.replace("&", "&amp;")
     s = s.replace("<", "&lt;")
     s = s.replace(">", "&gt;")
+    s = s.replace("\n", "<br />")
     return s
 
 
