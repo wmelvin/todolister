@@ -32,7 +32,7 @@ AppOptions = namedtuple(
 )
 
 
-app_version = "230919.1"
+app_version = "230926.1"
 pub_version = "0.1.dev1"
 
 app_name = Path(__file__).name
@@ -74,8 +74,17 @@ item_tags = {}
 
 def matches_filespec(file_name):
     for spec in file_specs:
-        if re.search(spec.lower(), file_name.lower()):
-            return True
+        try:
+            if re.search(spec.lower(), file_name.lower()):
+                return True
+        except Exception as e:
+            msg = "ERROR bad match spec '{0}'. Error message: '{1}'".format(
+                spec.lower(), e
+            )
+            print(msg)
+            if msg not in error_messages:
+                error_messages.append(msg)
+
     return False
 
 
@@ -283,6 +292,7 @@ def embed_style():
         }
     </style>
     """
+
 
 #  endregion
 
@@ -674,9 +684,7 @@ def get_html_output(page_title: str, by_mtime: bool):
     s += "<h1>{0}</h1>\n".format(page_title)
 
     s += "{0}\n".format(
-        contents_section(
-            todo_files, bool(flagged_items), bool(item_tags)
-        )
+        contents_section(todo_files, bool(flagged_items), bool(item_tags))
     )
 
     s += "{0}\n".format(flagged_items_html(flagged_items))

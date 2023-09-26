@@ -666,3 +666,71 @@ def test_scenario(tmp_path):
     assert "project-A" in text
     assert "project-B" in text
     assert "project-C" not in text
+
+
+def test_bad_match_spec(tmp_path, capsys):
+    reload(todolister)
+    assert len(todolister.file_list) == 0
+
+    #  Create a test directory tree.
+    test_home = tmp_path / "test" / "home"
+    test_home.mkdir(parents=True)
+
+    doc_dir = test_home / "Documents"
+    doc_dir.mkdir()
+
+    prj_dir = test_home / "Projects"
+
+    prj_dir.mkdir()
+    todo_a = prj_dir / "notes.md"
+    todo_a.write_text(
+        textwrap.dedent(
+            """
+            [ ] Hold my beer.
+            """
+        )
+    )
+
+    output_html = doc_dir / "project-tasks.html"
+
+    opt_file = test_home / "todolister.opt"
+    opt_file.write_text(
+        textwrap.dedent(
+            """
+            # todolister.opt for test.
+
+            [output]
+            filename="{0}"
+            by_modified_time_desc=False
+            do_text_file=No
+            do_text_file_dt=No
+            no_html=n
+            title="Projects To-Do"
+
+            [match]
+            "*.md$"
+            ".*\\.md"
+
+            # The first match spec above is bad. It causes an exception if not
+            # caught. The second one is good. The backslash has to be escaped
+            # here. There will be a single backslash in the opt file.
+
+            [folders]
+            "{1}"+
+            """
+        ).format(
+            str(output_html.with_suffix("")),
+            str(prj_dir)
+        )
+    )
+    #  Run test.
+    args = ["todolister.py", "--no-browser", "--options-file", str(opt_file)]
+    result = todolister.main(args)
+    assert result == 0
+
+    captured = capsys.readouterr()
+    assert "ERROR bad match spec '*.md$'" in captured.out
+
+    assert output_html.exists()
+    text = output_html.read_text()
+    assert "Hold my beer." in text
