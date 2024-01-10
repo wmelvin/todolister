@@ -4,39 +4,57 @@
 #  todolister.py
 # ---------------------------------------------------------------------
 
+from __future__ import annotations
+
 import argparse
 import re
 import sys
 import webbrowser
-
-from collections import namedtuple
 from datetime import datetime
 from pathlib import Path
-from typing import List
+from typing import NamedTuple
 
 
-ScanProps = namedtuple("ScanProps", "dir_name, do_recurse")
-
-FileInfo = namedtuple("FileInfo", "last_modified, full_name")
-
-TodoItem = namedtuple(
-    "TodoItem", "is_flagged, is_elevated, item_text, source_file"
-)
-
-TodoFile = namedtuple("TodoFile", "last_modified, full_name, todo_items")
-
-AppOptions = namedtuple(
-    "AppOptions",
-    "folders, optfile, recurse, by_mtime, output_file, do_text, "
-    "do_text_dt, no_html, page_title, no_browser",
-)
+class ScanProps(NamedTuple):
+    dir_name: str
+    do_recurse: bool
 
 
-app_version = "230926.1"
-pub_version = "0.1.dev1"
+class FileInfo(NamedTuple):
+    last_modified: str
+    full_name: str
+
+
+class TodoItem(NamedTuple):
+    is_flagged: bool
+    is_elevated: bool
+    item_text: str
+    source_file: str
+
+
+class TodoFile(NamedTuple):
+    last_modified: str
+    full_name: str
+    todo_items: list[TodoItem]
+
+
+class AppOptions(NamedTuple):
+    folders: list[str]
+    optfile: str
+    recurse: bool
+    by_mtime: bool
+    output_file: str
+    do_text: bool
+    do_text_dt: bool
+    no_html: bool
+    page_title: str
+    no_browser: bool
+
+
+__version__ = "0.1.dev2"
 
 app_name = Path(__file__).name
-app_title = f"{app_name} (v.{app_version})"
+app_title = f"{app_name} (v{__version__})"
 
 
 css_mode = 2
@@ -62,13 +80,13 @@ default_output_file = str(Path.cwd() / "from-todolister.html")
 
 run_dt = datetime.now()
 
-file_specs = []
-dirs_to_scan = []
-dirs_to_exclude = []
-file_list = []
-error_messages = []
-todo_files: List[TodoFile] = []
-flagged_items = []
+file_specs: list[str] = []
+dirs_to_scan: list[ScanProps] = []
+dirs_to_exclude: list[str] = []
+file_list: list[FileInfo] = []
+error_messages: list[str] = []
+todo_files: list[TodoFile] = []
+flagged_items: list[str] = []
 item_tags = {}
 
 
@@ -77,7 +95,7 @@ def matches_filespec(file_name):
         try:
             if re.search(spec.lower(), file_name.lower()):
                 return True
-        except Exception as e:
+        except Exception as e:  # noqa: PERF203
             msg = "ERROR bad match spec '{0}'. Error message: '{1}'".format(
                 spec.lower(), e
             )
@@ -89,7 +107,7 @@ def matches_filespec(file_name):
 
 
 def exclude_dir(dir_name):
-    return any(dir_name == dir for dir in dirs_to_exclude)
+    return any(dir_name == xdir for xdir in dirs_to_exclude)
 
 
 # TODO: Is simple string match good enough?
@@ -106,27 +124,19 @@ def get_matching_files(dir_name, do_recurse):
         for f in [x for x in p.iterdir() if x.is_file()]:
             if matches_filespec(f.name):
                 ts = datetime.fromtimestamp(f.stat().st_mtime)
-                file_list.append(
-                    FileInfo(ts.strftime("%Y-%m-%d %H:%M"), str(f))
-                )
+                file_list.append(FileInfo(ts.strftime("%Y-%m-%d %H:%M"), str(f)))
 
         if do_recurse:
-            for d in [
-                x for x in p.iterdir() if x.is_dir() and not x.is_symlink()
-            ]:
+            for d in [x for x in p.iterdir() if x.is_dir() and not x.is_symlink()]:
                 get_matching_files(d, do_recurse)
 
     except FileNotFoundError:
-        msg = "ERROR (FileNotFoundError): Cannot scan directory {0}".format(
-            dir_name
-        )
+        msg = "ERROR (FileNotFoundError): Cannot scan directory {0}".format(dir_name)
         print(msg)
         error_messages.append(msg)
 
     except PermissionError:
-        msg = "ERROR (PermissionError): Cannot scan directory {0}".format(
-            dir_name
-        )
+        msg = "ERROR (PermissionError): Cannot scan directory {0}".format(dir_name)
         print(msg)
         error_messages.append(msg)
 
@@ -134,7 +144,7 @@ def get_matching_files(dir_name, do_recurse):
 def get_todo_items(file_name):
     todo_items = []
     try:
-        with open(file_name, "r", errors="replace") as text_file:
+        with Path(file_name).open(errors="replace") as text_file:
             in_todo = False
             todo_text = ""
             is_flagged = False
@@ -159,12 +169,11 @@ def get_todo_items(file_name):
                             is_elevated = False
                     else:
                         todo_text += line_raw
-                else:
-                    if line_trim.startswith("[ ]"):
-                        in_todo = True
-                        is_flagged = line_trim.startswith("[ ]*")
-                        is_elevated = line_trim.startswith("[ ]+")
-                        todo_text += line_raw
+                elif line_trim.startswith("[ ]"):
+                    in_todo = True
+                    is_flagged = line_trim.startswith("[ ]*")
+                    is_elevated = line_trim.startswith("[ ]+")
+                    todo_text += line_raw
 
             #  Save last item, in case there were no blank lines at the
             #  end of the file.
@@ -189,7 +198,7 @@ def get_todo_items(file_name):
 def get_css_from_file(indent_len):
     css = ""
     indent = " " * indent_len
-    with open(css_file_name, "r") as css_file:
+    with Path(css_file_name).open() as css_file:
         lines = css_file.readlines()
         for line in lines:
             if line.strip():
@@ -308,7 +317,7 @@ def html_head(title):
     s += 'width=device-width, initial-scale=1.0">\n'
     s += "    <title>{0}</title>\n".format(title)
 
-    if css_mode == 2:
+    if css_mode == 2:  # noqa: PLR2004
         s += embed_style()
         s += "\n"
     elif css_mode == 1:
@@ -342,33 +351,22 @@ def html_text(text):
     s = text.replace("&", "&amp;")
     s = s.replace("<", "&lt;")
     s = s.replace(">", "&gt;")
-    s = s.replace("\n", "<br />")
-    return s
+    return s.replace("\n", "<br />")
 
 
 def todo_item_html(item, row):
-    if item.is_flagged or item.is_elevated:
-        add_class = " flagged"
-    else:
-        add_class = ""
+    add_class = " flagged" if item.is_flagged or item.is_elevated else ""
 
     s = '<div class="item{0}{1}">\n'.format(row % 2, add_class)
 
-    s += '<div class="itemtext">\n{0}\n</div>\n'.format(
-        html_text(item.item_text)
-    )
+    s += '<div class="itemtext">\n{0}\n</div>\n'.format(html_text(item.item_text))
 
     s += "</div>\n"
     return s
 
 
 def as_link_name(file_name):
-    return (
-        file_name.strip(" /\\")
-        .replace(" ", "_")
-        .replace("/", "-")
-        .replace(".", "-")
-    )
+    return file_name.strip(" /\\").replace(" ", "_").replace("/", "-").replace(".", "-")
 
 
 def contents_section(todo_files, any_flags, any_tags):
@@ -409,9 +407,7 @@ def flagged_item_html(item, row):
         as_link_name(item.source_file), item.source_file
     )
 
-    s += '<div class="itemtext">\n{0}\n</div>\n'.format(
-        html_text(item.item_text)
-    )
+    s += '<div class="itemtext">\n{0}\n</div>\n'.format(html_text(item.item_text))
 
     s += "</div>\n"
     return s
@@ -447,9 +443,7 @@ def tagged_item_html(item, row):
         as_link_name(item.source_file), item.source_file, "\n"
     )
 
-    s += '<div class="itemtext">\n{0}\n</div>\n'.format(
-        html_text(item.item_text)
-    )
+    s += '<div class="itemtext">\n{0}\n</div>\n'.format(html_text(item.item_text))
 
     s += "</div>\n"
     return s
@@ -499,16 +493,16 @@ def settings_section(by_mtime: bool):
     s = '<div id="settings_section">\n'
 
     s += "<p>Directories scanned:<br>\n"
-    for dir in dirs_to_scan:
+    for scan_prop in dirs_to_scan:
         s += "&nbsp;&nbsp;{}&nbsp;&nbsp;&nbsp;(recurse={})<br>\n".format(
-            dir.dir_name, dir.do_recurse
+            scan_prop.dir_name, scan_prop.do_recurse
         )
     s += "</p>\n"
 
     if dirs_to_exclude:
         s += "<p>Directories excluded:<br>\n"
-        for dir in dirs_to_exclude:
-            s += "&nbsp;&nbsp;{}<br>\n".format(dir)
+        for xdir in dirs_to_exclude:
+            s += "&nbsp;&nbsp;{}<br>\n".format(xdir)
         s += "</p>\n"
 
     if by_mtime:
@@ -543,7 +537,7 @@ def get_option_value(opt_section, opt_name, opt_content):
     for opt in opts:
         if opt.strip().startswith(opt_name):
             a = opt.split("=", 1)
-            if len(a) == 2:
+            if len(a) == 2:  # noqa: PLR2004
                 return a[1].strip("'\"")
     return None
 
@@ -552,12 +546,11 @@ def getopt_output_filename(default_filename, opt_content):
     value = get_option_value("[output]", "filename", opt_content)
     if value is None:
         return default_filename
-    else:
-        return value
+    return value
 
 
 def opt_is_true(value, prompt):
-    assert value is not None
+    assert value is not None  # noqa: S101
 
     s = value.lower()
 
@@ -577,44 +570,37 @@ def getopt_by_mtime(by_mtime_default, opt_content):
     value = get_option_value("[output]", "by_modified_time_desc", opt_content)
     if value is None:
         return by_mtime_default
-    else:
-        return opt_is_true(
-            value, "Sort by file-modified time in descending order (y/N)?"
-        )
+    return opt_is_true(value, "Sort by file-modified time in descending order (y/N)?")
 
 
 def getopt_do_text(default_do_text, opt_content):
     value = get_option_value("[output]", "do_text_file", opt_content)
     if value is None:
         return default_do_text
-    else:
-        return opt_is_true(value, "Create text file output (y/N)?")
+    return opt_is_true(value, "Create text file output (y/N)?")
 
 
 def getopt_do_text_dt(default_do_text_dt, opt_content):
     value = get_option_value("[output]", "do_text_file_dt", opt_content)
     if value is None:
         return default_do_text_dt
-    else:
-        return opt_is_true(
-            value, "Create text file output with date_time in file name (y/N)?"
-        )
+    return opt_is_true(
+        value, "Create text file output with date_time in file name (y/N)?"
+    )
 
 
 def getopt_no_html(default_no_html, opt_content):
     value = get_option_value("[output]", "no_html", opt_content)
     if value is None:
         return default_no_html
-    else:
-        return opt_is_true(value, "Skip creating HTML file output (y/N)?")
+    return opt_is_true(value, "Skip creating HTML file output (y/N)?")
 
 
 def getopt_title(default_title, opt_content):
     value = get_option_value("[output]", "title", opt_content)
     if value is None:
         return default_title
-    else:
-        return value
+    return value
 
 
 def getopt_filespecs(opt_content):
@@ -625,8 +611,7 @@ def getopt_filespecs(opt_content):
         specs = [entry.strip("'\" ") for entry in entries]
     else:
         specs = default_file_specs
-    for spec in specs:
-        file_specs.append(spec)
+    file_specs.extend(specs)
 
 
 def getopt_dirs_to_scan(opt_content):
@@ -639,9 +624,7 @@ def getopt_dirs_to_scan(opt_content):
                 recurse = True
                 s = s.strip("+")
             s = s.strip("'\" ")
-            dirs_to_scan.append(
-                ScanProps(str(Path(s).expanduser().resolve()), recurse)
-            )
+            dirs_to_scan.append(ScanProps(str(Path(s).expanduser().resolve()), recurse))
 
 
 def getopt_dirs_to_exclude(opt_content):
@@ -656,9 +639,7 @@ def get_output_filename(args_filename, date_time, desired_suffix):
 
     if date_time is not None:
         p = Path(
-            "{0}_{1}".format(
-                p.with_suffix(""), date_time.strftime("%Y%m%d_%H%M%S")
-            )
+            "{0}_{1}".format(p.with_suffix(""), date_time.strftime("%Y%m%d_%H%M%S"))
         )
 
     if p.suffix.lower() == desired_suffix:
@@ -696,9 +677,7 @@ def get_html_output(page_title: str, by_mtime: bool):
     s += "{0}\n".format(settings_section(by_mtime))
 
     s += '<div id="footer">\n'
-    s += "Created {0} by {1}.\n".format(
-        run_dt.strftime("%Y-%m-%d %H:%M"), app_title
-    )
+    s += "Created {0} by {1}.\n".format(run_dt.strftime("%Y-%m-%d %H:%M"), app_title)
 
     s += "</div>\n\n"
     s += "</div>  <!--end content -->\n"
@@ -710,7 +689,7 @@ def get_html_output(page_title: str, by_mtime: bool):
 def write_html_output(opts: AppOptions):
     out_file_name = get_output_filename(opts.output_file, None, ".html")
     print("\nWriting file [{0}].".format(out_file_name))
-    with open(out_file_name, "w") as f:
+    with Path(out_file_name).open("w") as f:
         f.write(get_html_output(opts.page_title, opts.by_mtime))
 
 
@@ -727,9 +706,7 @@ def get_text_output():
             s += "\n"
             text += s
     text += sep + "\n"
-    text += "Created {0} by {1}.\n".format(
-        run_dt.strftime("%Y-%m-%d %H:%M"), app_title
-    )
+    text += "Created {0} by {1}.\n".format(run_dt.strftime("%Y-%m-%d %H:%M"), app_title)
     return text
 
 
@@ -741,15 +718,13 @@ def write_text_output(opt):
 
     print("\nWriting file [{0}].".format(out_file_name))
 
-    with open(out_file_name, "w") as f:
+    with Path(out_file_name).open("w") as f:
         f.write(get_text_output())
 
 
 def open_html_output(opt):
     if not (opt.no_browser or opt.no_html):
-        url = "file://{0}".format(
-            get_output_filename(opt.output_file, None, ".html")
-        )
+        url = "file://{0}".format(get_output_filename(opt.output_file, None, ".html"))
         webbrowser.open(url)
 
 
@@ -780,7 +755,7 @@ def get_item_tags():
             wurdz = s.split(" ")
             for wurd in wurdz:
                 if len(wurd) > 1 and wurd.startswith("#"):
-                    if wurd in item_tags.keys():
+                    if wurd in item_tags:
                         item_tags[wurd].append(item)
                     else:
                         item_tags[wurd] = [item]
@@ -906,22 +881,20 @@ def get_options(argv):
         p = Path(args_parsed.optfile).expanduser().resolve()
         if not p.exists():
             raise SystemExit("Options file not found: {0}".format(p))
-        with open(p, "r") as f:
+        with p.open() as f:
             opt_lines = f.readlines()
 
     #  Only check the options file, and potentially use the default value, if
     #  the output file name was not specified as a command line argument.
     if args_parsed.output_file is None:
-        args_parsed.output_file = getopt_output_filename(
-            default_output_file, opt_lines
-        )
+        args_parsed.output_file = getopt_output_filename(default_output_file, opt_lines)
 
-    for folder in args_parsed.folders:
-        folder = str(Path(folder).expanduser().resolve())
-        print("Folder {0}".format(folder))
-        if not Path(folder).exists():
-            raise SystemExit("Path not found: " + folder)
-        dirs_to_scan.append(ScanProps(folder, args_parsed.recurse))
+    for adir in args_parsed.folders:
+        dir_name = str(Path(adir).expanduser().resolve())
+        print("Folder {0}".format(dir_name))
+        if not Path(dir_name).exists():
+            raise SystemExit("Path not found: " + dir_name)
+        dirs_to_scan.append(ScanProps(dir_name, args_parsed.recurse))
 
     getopt_dirs_to_scan(opt_lines)
 
@@ -932,13 +905,13 @@ def get_options(argv):
 
     for excluded in args_parsed.exclude_path.strip("'\"").split(";"):
         if excluded:
-            dirs_to_exclude.append(str(Path(excluded).expanduser().resolve()))
+            dirs_to_exclude.append(str(Path(excluded).expanduser().resolve()))  # noqa: PERF401
 
     getopt_dirs_to_exclude(opt_lines)
 
     getopt_filespecs(opt_lines)
 
-    result = AppOptions(
+    return AppOptions(
         args_parsed.folders,
         args_parsed.optfile,
         args_parsed.recurse,
@@ -951,22 +924,20 @@ def get_options(argv):
         args_parsed.no_browser,
     )
 
-    return result
-
 
 def main(argv):
     print("Running {0}.".format(app_title))
 
     opts = get_options(argv)
 
-    assert opts.output_file is not None
+    assert opts.output_file is not None  # noqa: S101
 
     if debug_stop_after_args:
         raise SystemExit("STOPPED")
 
-    for dir in dirs_to_scan:
-        print("Scanning folder [{0}]".format(dir.dir_name))
-        get_matching_files(dir.dir_name, dir.do_recurse)
+    for scan_prop in dirs_to_scan:
+        print("Scanning folder [{0}]".format(scan_prop.dir_name))
+        get_matching_files(scan_prop.dir_name, scan_prop.do_recurse)
 
     if opts.by_mtime:
         #  The last_modified field is the default for sort.
@@ -978,9 +949,7 @@ def main(argv):
     for file_info in file_list:
         print("Reading file [{0}]".format(file_info.full_name))
         items = get_todo_items(file_info.full_name)
-        todo_files.append(
-            TodoFile(file_info.last_modified, file_info.full_name, items)
-        )
+        todo_files.append(TodoFile(file_info.last_modified, file_info.full_name, items))
 
     get_flagged_items()
 

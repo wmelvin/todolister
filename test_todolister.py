@@ -7,12 +7,12 @@ tests rather than unit tests.
 
 """
 
-import html5lib
-import pytest
 import textwrap
-
 from importlib import reload
 from pathlib import Path
+
+import html5lib
+import pytest
 
 import todolister
 
@@ -317,14 +317,14 @@ def test_runs_and_fills_lists(todo_files_dir):
     result = todolister.main(args)
     assert result == 0
 
-    assert 0 < len(todolister.file_specs)
+    assert len(todolister.file_specs) > 0
     assert len(todolister.file_specs) == len(todolister.default_file_specs)
     assert len(todolister.dirs_to_scan) == 1
     expected_n_files = 10
     assert len(todolister.file_list) == expected_n_files
     assert len(todolister.todo_files) == expected_n_files
-    assert 0 < len(todolister.flagged_items)
-    assert 0 < len(todolister.item_tags)
+    assert len(todolister.flagged_items) > 0
+    assert len(todolister.item_tags) > 0
 
 
 def test_no_recurse(todo_files_dir):
@@ -400,13 +400,13 @@ def test_file_permission_error(tmp_path):
     result = todolister.main(args)
     assert result == 0
 
-    assert 0 < len(todolister.error_messages)
+    assert len(todolister.error_messages) > 0
 
     html = todolister.get_html_output("test_file_permission_error", False)
     assert "ERROR (PermissionError):" in html
 
 
-def get_pre_text(element, id):
+def get_pre_text(element, find_id):
     """
     Use XPath expressions to get text from the <pre> tag elements inside
     an element, such as a <div>, with the given id.
@@ -414,7 +414,7 @@ def get_pre_text(element, id):
     ns = "{http://www.w3.org/1999/xhtml}"
     pre_qry = f".//*{ns}pre"
     result = []
-    a = element.find(f'.//*[@id="{id}"]')
+    a = element.find(f'.//*[@id="{find_id}"]')
     if a is not None:
         b = a.findall(pre_qry)
         if b is not None:
@@ -423,14 +423,14 @@ def get_pre_text(element, id):
     return result
 
 
-def get_itemtext_elements(element, id):
+def get_itemtext_elements(element, find_id):
     """
     Use XPath expressions to get text from the <div class="itemtext">
     elements inside an element, such as a <div>, with the given id.
     """
     qry = './/*[@class="itemtext"]'
     result = []
-    a = element.find(f'.//*[@id="{id}"]')
+    a = element.find(f'.//*[@id="{find_id}"]')
     if a is not None:
         b = a.findall(qry)
         if b is not None:
@@ -649,9 +649,7 @@ def test_scenario(tmp_path):
             #  In this scenario, we don't want to see projects
             #  in the "Hold" folder.
             """
-        ).format(
-            str(output_html.with_suffix("")), str(prj_dir), str(hold_dir)
-        )
+        ).format(str(output_html.with_suffix("")), str(prj_dir), str(hold_dir))
     )
 
     #  Run test.
@@ -718,10 +716,7 @@ def test_bad_match_spec(tmp_path, capsys):
             [folders]
             "{1}"+
             """
-        ).format(
-            str(output_html.with_suffix("")),
-            str(prj_dir)
-        )
+        ).format(str(output_html.with_suffix("")), str(prj_dir))
     )
     #  Run test.
     args = ["todolister.py", "--no-browser", "--options-file", str(opt_file)]
