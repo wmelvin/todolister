@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import argparse
 import re
-import sys
 import webbrowser
 from datetime import datetime
 from pathlib import Path
@@ -50,8 +49,8 @@ class AppOptions(NamedTuple):
     page_title: str
     no_browser: bool
 
-
-__version__ = "0.1.dev2"
+#  Using calver (YYYY.0M.MICRO) for applications.
+__version__ = "2024.01.1"
 
 app_name = Path(__file__).name
 app_title = f"{app_name} (v{__version__})"
@@ -764,7 +763,7 @@ def get_item_tags():
 # ---------------------------------------------------------------------
 
 
-def get_args(argv):
+def get_args(arglist=None):
     ap = argparse.ArgumentParser(
         description="Read text files containing to-do markers and create a "
         "HTML report."
@@ -869,11 +868,11 @@ def get_args(argv):
         help="Do not try to open the output file in the web browser.",
     )
 
-    return ap.parse_args(argv[1:])
+    return ap.parse_args(arglist)
 
 
-def get_options(argv):
-    args_parsed = get_args(argv)
+def get_options(arglist=None):
+    args_parsed = get_args(arglist)
 
     if args_parsed.optfile is None:
         opt_lines = []
@@ -925,10 +924,10 @@ def get_options(argv):
     )
 
 
-def main(argv):
+def main(arglist=None):
     print("Running {0}.".format(app_title))
 
-    opts = get_options(argv)
+    opts = get_options(arglist)
 
     assert opts.output_file is not None  # noqa: S101
 
@@ -975,4 +974,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    main()

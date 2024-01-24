@@ -302,7 +302,6 @@ def test_runs_and_fills_lists(todo_files_dir):
     excl_dir = str(d / "NotThisDir")
 
     args = [
-        "todolister.py",
         str(d),
         "--recurse",
         "-x",
@@ -332,7 +331,6 @@ def test_no_recurse(todo_files_dir):
     assert len(todolister.file_list) == 0
     d = todo_files_dir
     args = [
-        "todolister.py",
         str(d),
         "--page-title",
         "test_no_recurse",
@@ -350,7 +348,6 @@ def test_html_output_is_parsable(todo_files_dir):
     reload(todolister)
     assert len(todolister.file_list) == 0
     args = [
-        "todolister.py",
         str(todo_files_dir),
         "--no-browser",
         "--page-title",
@@ -389,7 +386,6 @@ def test_file_permission_error(tmp_path):
 
     #  Run test.
     args = [
-        "todolister.py",
         str(d),
         "--no-browser",
         "--page-title",
@@ -471,7 +467,6 @@ def test_html_details(tmp_path):
     assert test_file.exists()
     #  Run test.
     args = [
-        "todolister.py",
         str(test_dir),
         "--no-browser",
         "--page-title",
@@ -519,7 +514,6 @@ def test_creates_text_output(tmp_path):
 
     #  Run test.
     args = [
-        "todolister.py",
         str(test_dir),
         "--no-browser",
         "--page-title",
@@ -653,7 +647,7 @@ def test_scenario(tmp_path):
     )
 
     #  Run test.
-    args = ["todolister.py", "--no-browser", "--options-file", str(opt_file)]
+    args = ["--no-browser", "--options-file", str(opt_file)]
     result = todolister.main(args)
     assert result == 0
 
@@ -719,7 +713,7 @@ def test_bad_match_spec(tmp_path, capsys):
         ).format(str(output_html.with_suffix("")), str(prj_dir))
     )
     #  Run test.
-    args = ["todolister.py", "--no-browser", "--options-file", str(opt_file)]
+    args = ["--no-browser", "--options-file", str(opt_file)]
     result = todolister.main(args)
     assert result == 0
 
