@@ -723,3 +723,52 @@ def test_bad_match_spec(tmp_path, capsys):
     assert output_html.exists()
     text = output_html.read_text()
     assert "Hold my beer." in text
+
+
+def test_option_add_match(tmp_path, capsys):
+    reload(todolister)
+    assert len(todolister.file_list) == 0
+
+    #  Create a test directory tree.
+    test_home = tmp_path / "test" / "home"
+    test_home.mkdir(parents=True)
+
+    doc_dir = test_home / "Documents"
+    doc_dir.mkdir()
+
+    prj_dir = test_home / "Projects"
+
+    prj_dir.mkdir()
+    todo_a = prj_dir / "dr-quack.md"
+    todo_a.write_text(
+        textwrap.dedent(
+            """
+            [ ] Hold my beer.
+            """
+        )
+    )
+
+    output_html = doc_dir / "project-tasks.html"
+
+    #  Run with default match specs.
+    args = [str(prj_dir), "--no-browser", "-o", str(output_html)]
+    result = todolister.main(args)
+    assert result == 0
+    assert output_html.exists()
+    text1 = output_html.read_text()
+    assert "Hold my beer." not in text1, "Should not include the test markdown file."
+
+    #  Run with added spec to match any .md file.
+    reload(todolister)
+    assert len(todolister.file_list) == 0
+    args = [
+        str(prj_dir),
+        "--no-browser",
+        "-o", str(output_html),
+        "--add-match", "'*.md'"
+    ]
+    result = todolister.main(args)
+    assert result == 0
+    assert output_html.exists()
+    text2 = output_html.read_text()
+    assert "Hold my beer." in text2, "Should include the test markdown file."

@@ -868,16 +868,25 @@ def get_args(arglist=None):
         help="Do not try to open the output file in the web browser.",
     )
 
+    ap.add_argument(
+        "--add-match",
+        dest="add_match",
+        type=str,
+        action="store",
+        help="Add a match pattern for selecting files to scan. For example, the "
+        "pattern '*.md' would cause all Markdown files to be included.",
+    )
+
     return ap.parse_args(arglist)
 
 
 def get_options(arglist=None):
-    args_parsed = get_args(arglist)
+    args = get_args(arglist)
 
-    if args_parsed.optfile is None:
+    if args.optfile is None:
         opt_lines = []
     else:
-        p = Path(args_parsed.optfile).expanduser().resolve()
+        p = Path(args.optfile).expanduser().resolve()
         if not p.exists():
             raise SystemExit("Options file not found: {0}".format(p))
         with p.open() as f:
@@ -885,15 +894,15 @@ def get_options(arglist=None):
 
     #  Only check the options file, and potentially use the default value, if
     #  the output file name was not specified as a command line argument.
-    if args_parsed.output_file is None:
-        args_parsed.output_file = getopt_output_filename(default_output_file, opt_lines)
+    if args.output_file is None:
+        args.output_file = getopt_output_filename(default_output_file, opt_lines)
 
-    for adir in args_parsed.folders:
+    for adir in args.folders:
         dir_name = str(Path(adir).expanduser().resolve())
         print("Folder {0}".format(dir_name))
         if not Path(dir_name).exists():
             raise SystemExit("Path not found: " + dir_name)
-        dirs_to_scan.append(ScanProps(dir_name, args_parsed.recurse))
+        dirs_to_scan.append(ScanProps(dir_name, args.recurse))
 
     getopt_dirs_to_scan(opt_lines)
 
@@ -902,7 +911,7 @@ def get_options(arglist=None):
     if not dirs_to_scan:
         dirs_to_scan.append(ScanProps(str(Path.cwd()), False))
 
-    for excluded in args_parsed.exclude_path.strip("'\"").split(";"):
+    for excluded in args.exclude_path.strip("'\"").split(";"):
         if excluded:
             dirs_to_exclude.append(str(Path(excluded).expanduser().resolve()))  # noqa: PERF401
 
@@ -910,17 +919,25 @@ def get_options(arglist=None):
 
     getopt_filespecs(opt_lines)
 
+    if args.add_match:
+        add_match = args.add_match.strip("'\" ")
+        #  If the pattern string starts with '*', make it '.*' to avoid the
+        #  'nothing to repeat at position 0' error.
+        if add_match.startswith("*"):
+            add_match = f".{add_match}"
+        file_specs.extend([add_match])
+
     return AppOptions(
-        args_parsed.folders,
-        args_parsed.optfile,
-        args_parsed.recurse,
-        getopt_by_mtime(args_parsed.by_mtime, opt_lines),
-        args_parsed.output_file,
-        getopt_do_text(args_parsed.do_text, opt_lines),
-        getopt_do_text_dt(args_parsed.do_text_dt, opt_lines),
-        getopt_no_html(args_parsed.no_html, opt_lines),
-        getopt_title(args_parsed.page_title, opt_lines),
-        args_parsed.no_browser,
+        args.folders,
+        args.optfile,
+        args.recurse,
+        getopt_by_mtime(args.by_mtime, opt_lines),
+        args.output_file,
+        getopt_do_text(args.do_text, opt_lines),
+        getopt_do_text_dt(args.do_text_dt, opt_lines),
+        getopt_no_html(args.no_html, opt_lines),
+        getopt_title(args.page_title, opt_lines),
+        args.no_browser,
     )
 
 
