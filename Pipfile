@@ -9,6 +9,3 @@ name = "pypi"
 html5lib = "*"
 pytest = "*"
 ruff = "*"
-
-[requires]
-python_version = "3.12"
