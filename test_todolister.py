@@ -275,7 +275,15 @@ def todo_files_dir(tmp_path_factory):
     """
     Makes a temporary directory and populates it with test files.
     Returns the pathlib.Path object for that directory.
+
+    Also creates the directory 'last_test_output_for_review' in
+    the project source directory if it does not already exist.
     """
+
+    out_path = Path.cwd() / "last_test_output_for_review"
+    if not out_path.exists():
+        out_path.mkdir()
+
     p = tmp_path_factory.mktemp("testdata")
     write_notes_txt(p)
     write_notes_md(p)
@@ -310,7 +318,7 @@ def test_runs_and_fills_lists(todo_files_dir):
         "test_runs_and_fills_lists",
         "--no-browser",
         "--output-file",
-        "./output_t/from-test_runs_and_fills_lists",
+        "./last_test_output_for_review/from-test_runs_and_fills_lists",
     ]
 
     result = todolister.main(args)
@@ -336,7 +344,7 @@ def test_no_recurse(todo_files_dir):
         "test_no_recurse",
         "--no-browser",
         "--output-file",
-        "./output_t/from-test_no_recurse",
+        "./last_test_output_for_review/from-test_no_recurse",
     ]
     result = todolister.main(args)
     assert result == 0
@@ -353,7 +361,7 @@ def test_html_output_is_parsable(todo_files_dir):
         "--page-title",
         "test_html_output_is_parsable",
         "--output-file",
-        "./output_t/from-test_html_output_is_parsable",
+        "./last_test_output_for_review/from-test_html_output_is_parsable",
     ]
     result = todolister.main(args)
     assert result == 0
@@ -391,7 +399,7 @@ def test_file_permission_error(tmp_path):
         "--page-title",
         "test_file_permission_error",
         "--output-file",
-        "./output_t/from-test_file_permission_error",
+        "./last_test_output_for_review/from-test_file_permission_error",
     ]
     result = todolister.main(args)
     assert result == 0
@@ -472,7 +480,7 @@ def test_html_details(tmp_path):
         "--page-title",
         "test_html_details",
         "--output-file",
-        "./output_t/from-test_html_details",
+        "./last_test_output_for_review/from-test_html_details",
     ]
     result = todolister.main(args)
     assert result == 0
@@ -510,7 +518,7 @@ def test_creates_text_output(tmp_path):
     )
     assert test_file.exists()
 
-    wo_suffix = "./output_t/from-test_creates_text_output"
+    wo_suffix = "./last_test_output_for_review/from-test_creates_text_output"
 
     #  Run test.
     args = [

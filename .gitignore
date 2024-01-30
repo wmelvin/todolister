@@ -11,11 +11,4 @@ __pycache__/
 .vscode/
 
 # App-specific.
-_0_bak/
-obsolete/
-output/
-output_t/
-sausage.sh
-todolister.opt
-try_stuff.py
-wipbak-list.txt
+last_test_output_for_review/
