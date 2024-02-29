@@ -50,7 +50,7 @@ class AppOptions(NamedTuple):
     no_browser: bool
 
 #  Using calver (YYYY.0M.MICRO) for applications.
-__version__ = "2024.01.1"
+__version__ = "2024.02.1"
 
 app_name = Path(__file__).name
 app_title = f"{app_name} (v{__version__})"
@@ -168,7 +168,10 @@ def get_todo_items(file_name):
                             is_elevated = False
                     else:
                         todo_text += line_raw
-                elif line_trim.startswith("[ ]"):
+
+                #  Markdown list-item to-dos (- [ ]) are included, but flagged and
+                #  elevated modifiers are not applied to them.
+                elif line_trim.startswith("[ ]") or line_trim.startswith("- [ ]"):
                     in_todo = True
                     is_flagged = line_trim.startswith("[ ]*")
                     is_elevated = line_trim.startswith("[ ]+")

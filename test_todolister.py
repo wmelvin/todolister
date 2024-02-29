@@ -780,3 +780,43 @@ def test_option_add_match(tmp_path, capsys):
     assert output_html.exists()
     text2 = output_html.read_text()
     assert "Hold my beer." in text2, "Should include the test markdown file."
+
+
+def test_includes_list_item_style_todo(tmp_path):
+    reload(todolister)
+    assert len(todolister.file_list) == 0
+
+    #  Create a test directory tree.
+    doc_dir = tmp_path / "Documents"
+    doc_dir.mkdir()
+    prj_dir = tmp_path / "Projects"
+    prj_dir.mkdir()
+    todo_md = prj_dir / "dr-quack.md"
+    todo_md.write_text(
+        textwrap.dedent(
+            """
+            [ ] A to-do item should be listed.
+
+            - [ ] A list-item to-do, such as used in Obsidian, should be listed.
+
+            - [x] A done list-item to-do should not be listed.
+
+            """
+        )
+    )
+    output_html = doc_dir / "project-tasks.html"
+
+    #  include *.md in match specs.
+    args = [
+        str(prj_dir),
+        "--no-browser",
+        "-o", str(output_html),
+        "--add-match", "'*.md'"
+    ]
+    result = todolister.main(args)
+    assert result == 0
+    assert output_html.exists()
+    htm = output_html.read_text()
+    assert "A to-do" in htm
+    assert "A list-item to-do" in htm
+    assert "should not" not in htm

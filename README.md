@@ -78,6 +78,7 @@ The `[exclude]`  section contains a list of one or more sub-folder paths, one pe
 ```
 usage: todolister.py [-h] [-f OPTFILE] [-r] [-m] [-o OUTPUT_FILE] [-t] [-d]
                      [-n] [-x EXCLUDE_PATH] [-p PAGE_TITLE] [-q]
+                     [--add-match ADD_MATCH]
                      [folders ...]
 
 Read text files containing to-do markers and create a HTML report.
@@ -85,7 +86,7 @@ Read text files containing to-do markers and create a HTML report.
 positional arguments:
   folders               Folder(s) to scan. Multiple folders can be specified.
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -f OPTFILE, --options-file OPTFILE
                         Name of options file.
@@ -107,6 +108,10 @@ optional arguments:
   -p PAGE_TITLE, --page-title PAGE_TITLE
                         Title for HTML page (will show in browser tab).
   -q, --no-browser      Do not try to open the output file in the web browser.
+  --add-match ADD_MATCH
+                        Add a match pattern for selecting files to scan. For
+                        example, the pattern '*.md' would cause all Markdown
+                        files to be included.
 ```
 
 ## History ##
