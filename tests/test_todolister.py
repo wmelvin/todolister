@@ -14,7 +14,7 @@ from pathlib import Path
 import html5lib
 import pytest
 
-import todolister
+from todolister import todolister
 
 
 def write_notes_txt(dir_path):
@@ -772,8 +772,10 @@ def test_option_add_match(tmp_path, capsys):
     args = [
         str(prj_dir),
         "--no-browser",
-        "-o", str(output_html),
-        "--add-match", "'*.md'"
+        "-o",
+        str(output_html),
+        "--add-match",
+        "'*.md'",
     ]
     result = todolister.main(args)
     assert result == 0
@@ -810,8 +812,10 @@ def test_includes_list_item_style_todo(tmp_path):
     args = [
         str(prj_dir),
         "--no-browser",
-        "-o", str(output_html),
-        "--add-match", "'*.md'"
+        "-o",
+        str(output_html),
+        "--add-match",
+        "'*.md'",
     ]
     result = todolister.main(args)
     assert result == 0

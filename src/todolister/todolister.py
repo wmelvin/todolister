@@ -49,6 +49,7 @@ class AppOptions(NamedTuple):
     page_title: str
     no_browser: bool
 
+
 #  Using calver (YYYY.0M.MICRO) for applications.
 __version__ = "2024.02.1"
 
@@ -768,8 +769,7 @@ def get_item_tags():
 
 def get_args(arglist=None):
     ap = argparse.ArgumentParser(
-        description="Read text files containing to-do markers and create a "
-        "HTML report."
+        description="Read text files containing to-do markers and create a HTML report."
     )
 
     #  Note: Using the term 'folder' instead of 'directory' in argument
@@ -830,8 +830,7 @@ def get_args(arglist=None):
         "--text-file-dt",
         dest="do_text_dt",
         action="store_true",
-        help="Create a text file output with the creation date_time in the "
-        "file name.",
+        help="Create a text file output with the creation date_time in the file name.",
     )
 
     ap.add_argument(
@@ -849,8 +848,7 @@ def get_args(arglist=None):
         dest="exclude_path",
         default="",
         action="store",
-        help="Path(s) to exclude from scan. Separate multiple paths using "
-        "semicolons.",
+        help="Path(s) to exclude from scan. Separate multiple paths using semicolons.",
     )
     # TODO: Perhaps expand on the help message.
 

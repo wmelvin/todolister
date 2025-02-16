@@ -1,3 +1,33 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "todolister"
+dynamic = ["version"]
+description = 'Scans folders for text files containing to-do items identified by markers.'
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+keywords = [ "text", "todo", "to-do", "todo-lister"]
+authors = [ { name = "Bill Melvin", email = "bill@sbillmelvin.com" } ]
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "html5lib>=1.1",
+    "pytest>=8.3.4",
+    "ruff>=0.9.6",
+]
+
+[project.scripts]
+todolister = "todolister:todolister.main"
+
+# [tool.setuptools.packages.find]
+# include = ["todolister*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "todolister.todolister.__version__"}
 
 [tool.ruff]
 line-length = 88
@@ -30,3 +60,4 @@ select = [
     "PERF401", # manual-list-comprehension
     "PLR2004", # magic-value-comparison
 ]
+
