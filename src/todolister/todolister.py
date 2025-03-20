@@ -52,7 +52,7 @@ class AppOptions(NamedTuple):
 
 
 #  Using calver (YYYY.0M.MICRO) for applications.
-__version__ = "2024.03.1"
+__version__ = "2025.03.1"
 
 app_name = Path(__file__).name
 app_title = f"{app_name} (v{__version__})"
