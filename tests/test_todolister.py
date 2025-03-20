@@ -824,3 +824,123 @@ def test_includes_list_item_style_todo(tmp_path):
     assert "A to-do" in htm
     assert "A list-item to-do" in htm
     assert "should not" not in htm
+
+
+def test_ignore_block(tmp_path):
+    reload(todolister)
+    assert len(todolister.file_list) == 0
+
+    #  Create a test directory tree with files for this test.
+    test_home = tmp_path / "test" / "home"
+    test_home.mkdir(parents=True)
+
+    doc_dir = test_home / "Documents"
+    doc_dir.mkdir()
+    (doc_dir / "notes-doc.txt").write_text(
+        textwrap.dedent(
+            """
+            [ ] Write a document.
+            """
+        )
+    )
+
+    doc_subdir = doc_dir / "Rubbish"
+    doc_subdir.mkdir()
+    (doc_subdir / "notes-doc-subdir.txt").write_text(
+        textwrap.dedent(
+            """
+            [ ] Ignore Rubbish.
+            """
+        )
+    )
+
+    doc_subdir2 = doc_dir / "Mad Cow"
+    doc_subdir2.mkdir()
+    (doc_subdir2 / "notes-doc-subdir2.txt").write_text(
+        textwrap.dedent(
+            """
+            [ ] Ignore Mad Cow.
+            """
+        )
+    )
+
+    doc_subdir3 = doc_dir / "Partial_Path"
+    doc_subdir3.mkdir()
+    (doc_subdir3 / "notes-doc-subdir3.txt").write_text(
+        textwrap.dedent(
+            """
+            [ ] Ignore Partial_Path.
+            """
+        )
+    )
+
+    prj_dir = test_home / "Projects"
+    prj_dir.mkdir()
+    (prj_dir / "notes.md").write_text(
+        textwrap.dedent(
+            """
+            [ ] Do a project.
+            """
+        )
+    )
+    (prj_dir / "notes-private.md").write_text(
+        textwrap.dedent(
+            """
+            [ ] Ignore notes-private.
+            """
+        )
+    )
+    (prj_dir / "bad_notes.txt").write_text(
+        textwrap.dedent(
+            """
+            [ ] Kick the dog.
+            [ ] Ignore bad_notes.txt.
+            """
+        )
+    )
+
+    output_html = doc_dir / "project-tasks.html"
+
+    opt_file = test_home / "todolister.opt"
+    opt_file.write_text(
+        textwrap.dedent(
+            f"""
+            # todolister.opt for test.
+
+            [output]
+            filename="{str(output_html.with_suffix(""))}"
+            by_modified_time_desc=False
+            do_text_file=No
+            do_text_file_dt=No
+            no_html=n
+            title="Projects To-Do"
+
+            [folders]
+            "{doc_dir}"+
+            "{prj_dir}"+
+
+            [ignore]
+            Rubbish/
+            "Mad Cow/"
+            Partial_*/**
+            bad_notes.*
+            *private.*
+            """
+        )
+    )
+
+    #  Run test.
+    args = ["--no-browser", "--options-file", str(opt_file)]
+
+    result = todolister.main(args)
+    assert result == 0
+    assert output_html.exists()
+
+    htm = output_html.read_text()
+    assert "a project" in htm
+    assert "a document" in htm
+    assert "Ignore Rubbish" not in htm
+    assert "Ignore Mad Cow" not in htm
+    assert "Ignore Partial_Path" not in htm
+    assert "Ignore notes-private" not in htm
+    assert "Ignore bad_notes.txt" not in htm

@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import webbrowser
 from datetime import datetime
@@ -51,7 +52,7 @@ class AppOptions(NamedTuple):
 
 
 #  Using calver (YYYY.0M.MICRO) for applications.
-__version__ = "2024.02.1"
+__version__ = "2024.03.1"
 
 app_name = Path(__file__).name
 app_title = f"{app_name} (v{__version__})"
@@ -84,6 +85,7 @@ file_specs: list[str] = []
 dirs_to_scan: list[ScanProps] = []
 dirs_to_exclude: list[str] = []
 file_list: list[FileInfo] = []
+ignore_list: list[str] = []
 error_messages: list[str] = []
 todo_files: list[TodoFile] = []
 flagged_items: list[str] = []
@@ -107,10 +109,27 @@ def matches_filespec(file_name):
 
 
 def exclude_dir(dir_name):
+    # TODO: Is simple string match good enough?
     return any(dir_name == xdir for xdir in dirs_to_exclude)
 
 
-# TODO: Is simple string match good enough?
+def to_ignore(p: Path) -> bool:
+    """Check if the file path matches a pattern in the ignore list."""
+    for pattern in ignore_list:
+        #  Look for a 'directory/' match for a single path part at any level.
+        if (
+            "*" not in pattern
+            and pattern.endswith(os.sep)
+            and pattern.rstrip(os.sep) in p.parts
+        ):
+            return True
+        #  Look for a simple match that may use wildcard patterns.
+        if p.match(pattern):
+            return True
+        #  Look for a full match that may use glob-style patterns.
+        if p.full_match(pattern):
+            return True
+    return False
 
 
 def get_matching_files(dir_name, do_recurse):
@@ -122,7 +141,7 @@ def get_matching_files(dir_name, do_recurse):
 
     try:
         for f in [x for x in p.iterdir() if x.is_file()]:
-            if matches_filespec(f.name):
+            if matches_filespec(f.name) and not to_ignore(f):
                 ts = datetime.fromtimestamp(f.stat().st_mtime)
                 file_list.append(FileInfo(ts.strftime("%Y-%m-%d %H:%M"), str(f)))
 
@@ -637,6 +656,11 @@ def getopt_dirs_to_exclude(opt_content):
         dirs_to_exclude.append(str(Path(s).expanduser().resolve()))
 
 
+def getopt_ignore(opt_content):
+    entries = get_option_entries("[ignore]", opt_content)
+    ignore_list.extend([entry.strip("'\" ") for entry in entries])
+
+
 def get_output_filename(args_filename, date_time, desired_suffix):
     p = Path(args_filename).expanduser().resolve()
 
@@ -917,6 +941,8 @@ def get_options(arglist=None):
             dirs_to_exclude.append(str(Path(excluded).expanduser().resolve()))  # noqa: PERF401
 
     getopt_dirs_to_exclude(opt_lines)
+
+    getopt_ignore(opt_lines)
 
     getopt_filespecs(opt_lines)
 

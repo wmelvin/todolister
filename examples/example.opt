@@ -13,6 +13,9 @@ title="Projects To-Do"
 #  (case-insensitive).
 
 
+#  The [match] section is optional. These are same
+#  as the default patterns.
+
 [match]
 "^notes.*.txt$"
 ".*notes.txt$"
@@ -20,17 +23,26 @@ title="Projects To-Do"
 ".*-todo.txt$"
 "^Context-.*.txt$"
 
-#  The [match] section is optional. These are same
-#  as the default patterns.
 
+#  In the [folders] section, '+' is the switch for recursive scan into sub-folders.
 
 [folders]
 "/test/home/Projects"+
 
-#  '+' is the switch for recursive scan into sub-folders.
+
+#  The [exclude] section only takes full folder paths.
+#  In this scenario, we don't want to see Project items in the "Hold" folder.
 
 [exclude]
-"/test/home/Projects/Hold
+"/test/home/Projects/Hold"
 
-#  In this scenario, we don't want to see projects
-#  in the "Hold" folder.
+
+#  The [ignore] section takes patterns to match partial folder paths and 
+#  wildacard patterns to match file names.
+#  With the settings below, a folder named "Rubbish" at any level in the
+#  folder tree is excluded. Any file with "private" in its name (such
+#  as "notes-private.txt") is excluded.
+
+[ignore]
+Rubbish/
+*private.*

@@ -61,7 +61,9 @@ The `[match]` section contains a list file name matching patterns, one per line,
 
 The `[folders]` section contains a list of one or more folder paths, one per line, to scan for files that match the to-do file patterns.
 
-The `[exclude]`  section contains a list of one or more sub-folder paths, one per line, to exclude while scanning the given list of folders.
+The `[exclude]` section contains a list of one or more sub-folder paths, one per line, to exclude while scanning the given list of folders.
+
+The `[ignore]` section contains a list of one or more patterns used to exclude files or folders. This is similar to the `[exclude]` section, but can match partial paths using wildcard patterns.
 
 
 ## Examples
