@@ -51,8 +51,8 @@ class AppOptions(NamedTuple):
     no_browser: bool
 
 
-#  Using calver (YYYY.0M.MICRO) for applications.
-__version__ = "2025.03.1"
+#  Using calver (YYYY.0M.MICRO) for this application.
+__version__ = "2025.11.1"
 
 app_name = Path(__file__).name
 app_title = f"{app_name} (v{__version__})"
