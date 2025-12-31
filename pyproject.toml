@@ -7,7 +7,7 @@ name = "todolister"
 dynamic = ["version"]
 description = 'Scans folders for text files containing to-do items identified by markers.'
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 license = {text = "MIT"}
 keywords = [ "text", "todo", "to-do", "todo-lister"]
 authors = [ { name = "Bill Melvin", email = "bill@sbillmelvin.com" } ]
@@ -23,14 +23,11 @@ dev = [
 [project.scripts]
 todolister = "todolister:todolister.main"
 
-# [tool.setuptools.packages.find]
-# include = ["todolister*"]
-
 [tool.setuptools.dynamic]
 version = {attr = "todolister.todolister.__version__"}
 
 [tool.ruff]
-line-length = 88
+line-length = 99
 indent-width = 4
 
 [tool.ruff.lint]
@@ -60,4 +57,3 @@ select = [
     "PERF401", # manual-list-comprehension
     "PLR2004", # magic-value-comparison
 ]
-

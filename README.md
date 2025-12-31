@@ -78,10 +78,10 @@ The `[ignore]` section contains a list of one or more patterns used to exclude f
 ## Command-Line Usage
 
 ```
-usage: todolister.py [-h] [-f OPTFILE] [-r] [-m] [-o OUTPUT_FILE] [-t] [-d]
-                     [-n] [-x EXCLUDE_PATH] [-p PAGE_TITLE] [-q]
-                     [--add-match ADD_MATCH]
-                     [folders ...]
+usage: todolister [-h] [-f OPTFILE] [-r] [-m] [-o OUTPUT_FILE] [-t] [-d] [-n]
+                  [-x EXCLUDE_PATH] [-p PAGE_TITLE] [-q]
+                  [--add-match ADD_MATCH]
+                  [folders ...]
 
 Read text files containing to-do markers and create a HTML report.
 
@@ -90,13 +90,13 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  -f OPTFILE, --options-file OPTFILE
+  -f, --options-file OPTFILE
                         Name of options file.
   -r, --recurse         Recurse sub-folders. Applies to all folders specified.
                         Use an options file to specify the recurse option for
                         individual folders.
   -m, --mtime-desc      Sort files by last-modified time in descending order.
-  -o OUTPUT_FILE, --output-file OUTPUT_FILE
+  -o, --output-file OUTPUT_FILE
                         Name of output file. The '.html' extension will be
                         added if not specified.
   -t, --text-file       Create a text file output.
@@ -104,10 +104,10 @@ options:
                         in the file name.
   -n, --no-html         Do not create the HTML file output. Use with -t to
                         only create a text file output.
-  -x EXCLUDE_PATH, --exclude-path EXCLUDE_PATH
+  -x, --exclude-path EXCLUDE_PATH
                         Path(s) to exclude from scan. Separate multiple paths
                         using semicolons.
-  -p PAGE_TITLE, --page-title PAGE_TITLE
+  -p, --page-title PAGE_TITLE
                         Title for HTML page (will show in browser tab).
   -q, --no-browser      Do not try to open the output file in the web browser.
   --add-match ADD_MATCH

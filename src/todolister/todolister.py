@@ -52,11 +52,10 @@ class AppOptions(NamedTuple):
 
 
 #  Using calver (YYYY.0M.MICRO) for this application.
-__version__ = "2025.11.1"
+__version__ = "2025.12.1"
 
-app_name = Path(__file__).name
+app_name = "todolister"
 app_title = f"{app_name} (v{__version__})"
-
 
 css_mode = 2
 # 0 = link to external css file (use for trying css changes).
@@ -98,9 +97,7 @@ def matches_filespec(file_name):
             if re.search(spec.lower(), file_name.lower()):
                 return True
         except Exception as e:  # noqa: PERF203
-            msg = "ERROR bad match spec '{0}'. Error message: '{1}'".format(
-                spec.lower(), e
-            )
+            msg = "ERROR bad match spec '{0}'. Error message: '{1}'".format(spec.lower(), e)
             print(msg)
             if msg not in error_messages:
                 error_messages.append(msg)
@@ -117,11 +114,7 @@ def to_ignore(p: Path) -> bool:
     """Check if the file path matches a pattern in the ignore list."""
     for pattern in ignore_list:
         #  Look for a 'directory/' match for a single path part at any level.
-        if (
-            "*" not in pattern
-            and pattern.endswith(os.sep)
-            and pattern.rstrip(os.sep) in p.parts
-        ):
+        if "*" not in pattern and pattern.endswith(os.sep) and pattern.rstrip(os.sep) in p.parts:
             return True
         #  Look for a simple match that may use wildcard patterns.
         if p.match(pattern):
@@ -200,9 +193,7 @@ def get_todo_items(file_name):
             #  Save last item, in case there were no blank lines at the
             #  end of the file.
             if todo_text:
-                todo_items.append(
-                    TodoItem(is_flagged, is_elevated, todo_text, file_name)
-                )
+                todo_items.append(TodoItem(is_flagged, is_elevated, todo_text, file_name))
 
     except PermissionError:
         msg = "ERROR (PermissionError): Cannot read {0}".format(file_name)
@@ -606,9 +597,7 @@ def getopt_do_text_dt(default_do_text_dt, opt_content):
     value = get_option_value("[output]", "do_text_file_dt", opt_content)
     if value is None:
         return default_do_text_dt
-    return opt_is_true(
-        value, "Create text file output with date_time in file name (y/N)?"
-    )
+    return opt_is_true(value, "Create text file output with date_time in file name (y/N)?")
 
 
 def getopt_no_html(default_no_html, opt_content):
@@ -627,12 +616,10 @@ def getopt_title(default_title, opt_content):
 
 def getopt_filespecs(opt_content):
     entries = get_option_entries("[match]", opt_content)
-    if entries:
-        #  If the options file contains file specs then they override the
-        #  defaults.
-        specs = [entry.strip("'\" ") for entry in entries]
-    else:
-        specs = default_file_specs
+
+    #  If the options file contains file specs then they override the defaults.
+    specs = [entry.strip("'\" ") for entry in entries] if entries else default_file_specs
+
     file_specs.extend(specs)
 
 
@@ -665,14 +652,9 @@ def get_output_filename(args_filename, date_time, desired_suffix):
     p = Path(args_filename).expanduser().resolve()
 
     if date_time is not None:
-        p = Path(
-            "{0}_{1}".format(p.with_suffix(""), date_time.strftime("%Y%m%d_%H%M%S"))
-        )
+        p = Path("{0}_{1}".format(p.with_suffix(""), date_time.strftime("%Y%m%d_%H%M%S")))
 
-    if p.suffix.lower() == desired_suffix:
-        s = str(p)
-    else:
-        s = str(p.with_suffix(desired_suffix))
+    s = str(p) if p.suffix.lower() == desired_suffix else str(p.with_suffix(desired_suffix))
 
     if matches_filespec(Path(s).name):
         print(
@@ -691,9 +673,7 @@ def get_html_output(page_title: str, by_mtime: bool):
     s += '<div id="content">\n'
     s += "<h1>{0}</h1>\n".format(page_title)
 
-    s += "{0}\n".format(
-        contents_section(todo_files, bool(flagged_items), bool(item_tags))
-    )
+    s += "{0}\n".format(contents_section(todo_files, bool(flagged_items), bool(item_tags)))
 
     s += "{0}\n".format(flagged_items_html(flagged_items))
 
@@ -793,7 +773,8 @@ def get_item_tags():
 
 def get_args(arglist=None):
     ap = argparse.ArgumentParser(
-        description="Read text files containing to-do markers and create a HTML report."
+        prog=app_name,
+        description="Read text files containing to-do markers and create a HTML report.",
     )
 
     #  Note: Using the term 'folder' instead of 'directory' in argument
@@ -837,8 +818,7 @@ def get_args(arglist=None):
         "--output-file",
         dest="output_file",
         action="store",
-        help="Name of output file. The '.html' extension will be "
-        "added if not specified.",
+        help="Name of output file. The '.html' extension will be added if not specified.",
     )
 
     ap.add_argument(
@@ -862,8 +842,7 @@ def get_args(arglist=None):
         "--no-html",
         dest="no_html",
         action="store_true",
-        help="Do not create the HTML file output. Use with -t to only create "
-        "a text file output.",
+        help="Do not create the HTML file output. Use with -t to only create a text file output.",
     )
 
     ap.add_argument(
