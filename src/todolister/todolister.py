@@ -52,7 +52,7 @@ class AppOptions(NamedTuple):
 
 
 #  Using calver (YYYY.0M.MICRO) for this application.
-__version__ = "2025.12.1"
+__version__ = "2026.04.1"
 
 app_name = "todolister"
 app_title = f"{app_name} (v{__version__})"
@@ -696,7 +696,7 @@ def get_html_output(page_title: str, by_mtime: bool):
 def write_html_output(opts: AppOptions):
     out_file_name = get_output_filename(opts.output_file, None, ".html")
     print("\nWriting file [{0}].".format(out_file_name))
-    with Path(out_file_name).open("w") as f:
+    with Path(out_file_name).open("w", encoding="utf-8") as f:
         f.write(get_html_output(opts.page_title, opts.by_mtime))
 
 
@@ -725,7 +725,7 @@ def write_text_output(opt):
 
     print("\nWriting file [{0}].".format(out_file_name))
 
-    with Path(out_file_name).open("w") as f:
+    with Path(out_file_name).open("w", encoding="utf-8") as f:
         f.write(get_text_output())
 
 
