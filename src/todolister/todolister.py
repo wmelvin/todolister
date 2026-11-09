@@ -52,7 +52,7 @@ class AppOptions(NamedTuple):
 
 
 #  Using calver (YYYY.0M.MICRO) for this application.
-__version__ = "2026.04.1"
+__version__ = "2026.11.1"
 
 app_name = "todolister"
 app_title = f"{app_name} (v{__version__})"
