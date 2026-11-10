@@ -696,8 +696,15 @@ def get_html_output(page_title: str, by_mtime: bool):
 def write_html_output(opts: AppOptions):
     out_file_name = get_output_filename(opts.output_file, None, ".html")
     print("\nWriting file [{0}].".format(out_file_name))
-    with Path(out_file_name).open("w", encoding="utf-8") as f:
-        f.write(get_html_output(opts.page_title, opts.by_mtime))
+    try:
+        with Path(out_file_name).open("w", encoding="utf-8") as f:
+            f.write(get_html_output(opts.page_title, opts.by_mtime))
+    except OSError as e:
+        msg = "ERROR: Cannot write HTML output file [{0}]: {1}".format(out_file_name, e)
+        print(msg)
+        error_messages.append(msg)
+        return False
+    return True
 
 
 def get_text_output():
@@ -725,8 +732,15 @@ def write_text_output(opt):
 
     print("\nWriting file [{0}].".format(out_file_name))
 
-    with Path(out_file_name).open("w", encoding="utf-8") as f:
-        f.write(get_text_output())
+    try:
+        with Path(out_file_name).open("w", encoding="utf-8") as f:
+            f.write(get_text_output())
+    except OSError as e:
+        msg = "ERROR: Cannot write text output file [{0}]: {1}".format(out_file_name, e)
+        print(msg)
+        error_messages.append(msg)
+        return False
+    return True
 
 
 def open_html_output(opt):
@@ -977,11 +991,13 @@ def main(arglist=None):
 
     get_item_tags()
 
+    html_ok = True
     if not opts.no_html:
-        write_html_output(opts)
+        html_ok = write_html_output(opts)
 
+    text_ok = True
     if opts.do_text or opts.do_text_dt:
-        write_text_output(opts)
+        text_ok = write_text_output(opts)
 
     if error_messages:
         print("\nThere were errors!")
@@ -989,10 +1005,13 @@ def main(arglist=None):
             print(msg)
         print("")
 
-    open_html_output(opts)
+    if html_ok:
+        open_html_output(opts)
 
     print("Done ({0}).".format(app_title))
 
+    if not (html_ok and text_ok):
+        return 1
     return 0
 
 
