@@ -944,3 +944,15 @@ def test_ignore_block(tmp_path):
     assert "Ignore Partial_Path" not in htm
     assert "Ignore notes-private" not in htm
     assert "Ignore bad_notes.txt" not in htm
+
+
+def test_unwritable_output_file_clean_error(todo_files_dir, capsys):
+    reload(todolister)
+    bad_out = todo_files_dir / 'no-such-dir' / 'out.html'
+    args = [str(todo_files_dir), '--no-browser', '--output-file', str(bad_out)]
+    result = todolister.main(args)
+    assert result == 1
+    out = capsys.readouterr().out
+    assert 'Cannot write HTML output file' in out
+    assert 'Traceback' not in out
+
